@@ -5,7 +5,7 @@ use anyhow::{
 
 use crate::time::UTCTimestamp;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct UTCDate {
     year: u32,
     month: u8,
@@ -51,6 +51,21 @@ impl UTCDate {
             month,
             year,
         }
+    }
+
+    /// Reference:
+    /// http://howardhinnant.github.io/date_algorithms.html#days_from_civil
+    ///
+    /// Simplified for unsigned days/years
+    pub fn to_utc_days(&self) -> u32 {
+        let m = self.month as u32;
+        let d = self.day as u32;
+        let y = self.year - ((m <= 2) as u32);
+        let era = y / 400;
+        let yoe = y - era * 400;
+        let doy = ((153 * (if m > 2 { m - 3 } else { m + 9 }) + 2) / 5) + d - 1;
+        let doe = (yoe * 365) + (yoe / 4) - (yoe / 100) + doy;
+        (era * 146097) + doe - 719468
     }
 
     /// Return day component of date
@@ -115,13 +130,11 @@ fn test_utc_date_from_components() -> Result<()> {
                 if !case_is_valid {
                     return Err(anyhow!("Case passed unexpectedly. (date: {:04}-{:02}-{:02})", year, month, day));
                 }
-                continue;
             },
             Err(e) => {
                 if case_is_valid {
                     return Err(e);
                 }
-                continue;
             }
         }   
     }
@@ -146,6 +159,28 @@ fn test_from_utc_days() -> Result<()> {
             day
         };
         assert_eq!(date, expected);
+    }
+
+    Ok(())
+}
+
+#[test]
+fn test_to_utc_days() -> Result<()> {
+    let test_cases = [
+        (0, 1970, 1, 1),
+        (30, 1970, 1, 31),
+        (19522, 2023, 6, 14),
+        (381112, 3013, 6, 14),
+    ];
+
+    for (expected, year, month, day) in test_cases {
+        let date = UTCDate {
+            year,
+            month,
+            day
+        };
+        let utc_days = date.to_utc_days();
+        assert_eq!(utc_days, expected);
     }
 
     Ok(())
