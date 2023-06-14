@@ -36,12 +36,12 @@ impl UTCDate {
     pub fn from_utc_days(days: u32) -> Self {
         let z = days + 719468;
         let era = z / 146097;
-        let doe = z;
+        let doe = z - (era * 146097);
         let yoe = (doe - (doe / 1460) + (doe / 36524) - (doe / 146096)) / 365;
-        let doy = doe - (365 * yoe) + (yoe / 4) - (yoe / 100);
+        let doy = doe - (365 * yoe) - (yoe / 4) + (yoe / 100);
         let mp = ((5 * doy) + 2) / 153;
         let day = (doy - (((153 * mp) + 2) / 5) + 1) as u8;
-        let month = if mp > 10 { mp + 3 } else { mp - 9 } as u8;
+        let month = if mp < 10 { mp + 3 } else { mp - 9 } as u8;
         let year = yoe + era * 400 + (month <= 2) as u32;
         Self {
             day,
