@@ -4,6 +4,14 @@ use anyhow::{
     Result,
     anyhow
 };
+use derive_more::{
+    Add,
+    Sub,
+    Mul,
+    Div,
+    From,
+    Into,
+};
 
 // TIME CONSTANTS PER DAY
 pub const HOURS_PER_DAY: u64 = 24;
@@ -81,9 +89,69 @@ impl UTCTimestamp {
     }
 }
 
-impl From<UTCDate> for UTCTimestamp {
-    fn from(date: UTCDate) -> Self {
-        Self::try_from_days_and_nanos(date.to_utc_days(), 0).unwrap()
+pub trait UTCTransformations
+where
+    Self: Sized
+{
+    fn from_utc_duration(duration: Duration) -> Self {
+        let timestamp = UTCTimestamp::from_duration(duration);
+        Self::from_utc_timestamp(timestamp)
+    }
+
+    fn from_system_time() -> Result<Self> {
+        let timestamp = UTCTimestamp::from_system_time()?;
+        Ok(Self::from_utc_timestamp(timestamp))
+    }
+
+    fn from_utc_millis(ms: u64) -> Self {
+        let timestamp = UTCTimestamp::from_millis(ms);
+        Self::from_utc_timestamp(timestamp)
+    }
+
+    fn from_utc_micros(us: u64) -> Self {
+        let timestamp = UTCTimestamp::from_micros(us);
+        Self::from_utc_timestamp(timestamp)
+    }
+
+    fn from_utc_nanos(ns: u64) -> Self {
+        let timestamp = UTCTimestamp::from_nanos(ns);
+        Self::from_utc_timestamp(timestamp)
+    }
+
+    fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self;
+}
+
+/// UTC Day count.
+/// UTC Days is the number of days since the Unix Epoch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Add, Sub, Mul, Div, From, Into)]
+pub struct UTCDay(u32);
+
+impl UTCTransformations for UTCDay {
+    fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self {
+        Self((timestamp.0.as_secs() / SECONDS_PER_DAY) as u32)
+    }
+}
+
+impl UTCDay {
+    /// Calculate and return the day of the week in numerical form
+    /// [0, 6] represents [Sun, Sat]
+    ///
+    /// Reference:
+    /// http://howardhinnant.github.io/date_algorithms.html#weekday_from_days
+    pub fn to_utc_weekday(&self) -> u8 {
+        ((self.0 as u64 + 4) % 7) as u8
+    }
+
+    pub fn from_raw(days: u32) -> Self {
+        Self(days)
+    }
+
+    pub fn to_raw(&self) -> u32 {
+        self.0
+    }
+
+    pub fn as_raw(self) -> u32 {
+        self.0
     }
 }
 
