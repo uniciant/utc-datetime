@@ -67,14 +67,13 @@ impl UTCTimestamp {
     }
 
 
-    fn from_components(secs: u64, nanos: u32) -> Self {
-        Self(Duration::new(secs, nanos))
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, From, Into)]
+pub struct UTCTimestamp(Duration);
 
     fn from_days_and_nanos(days: UTCDay, time_of_day_ns: u64) -> Self {
         let secs = (days.0 as u64 * SECONDS_PER_DAY) + (time_of_day_ns / NANOS_PER_SECOND);
         let nanos = (time_of_day_ns % NANOS_PER_SECOND) as u32;
-        Self::from_components(secs, nanos)
+        Duration::new(secs, nanos).into()
     }
 
     pub fn try_from_days_and_nanos(days: UTCDay, time_of_day_ns: u64) -> Result<Self> {
@@ -91,7 +90,7 @@ impl UTCTimestamp {
     pub fn from_system_time() -> Result<Self> {
         let duration = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)?;
-        Ok(Self::from_duration(duration))
+        Ok(duration.into())
     }
 
     pub fn from_millis(ms: u64) -> Self {
@@ -112,7 +111,7 @@ where
     Self: Sized
 {
     fn from_utc_duration(duration: Duration) -> Self {
-        let timestamp = UTCTimestamp::from_duration(duration);
+        let timestamp = duration.into();
         Self::from_utc_timestamp(timestamp)
     }
 
