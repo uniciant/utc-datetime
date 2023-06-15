@@ -91,7 +91,7 @@ impl UTCTimestamp {
     }
 
     /// Get the UTC time-of-day in nanoseconds.
-    pub fn to_time_of_day_nanos(&self) -> u64 {
+    pub fn to_time_of_day_ns(&self) -> u64 {
         ((self.0.as_secs() % SECONDS_PER_DAY)  * NANOS_PER_SECOND) + (self.0.subsec_nanos() as u64)
     }
 }
@@ -152,29 +152,42 @@ impl UTCDay {
     }
 }
 
-#[test]
-fn test_from_days_and_nanos() -> Result<()> {
-    let test_cases = [
-        (UTCTimestamp(Duration::from_nanos(0)), UTCDay(0), 0, 4),
-        (UTCTimestamp(Duration::from_nanos(123456789)), UTCDay(0), 123456789, 4),
-        (UTCTimestamp(Duration::from_millis(1686756677000)), UTCDay(19522), 55877_000_000_000, 3),
-        (UTCTimestamp(Duration::from_millis(1709220677000)), UTCDay(19782), 55877_000_000_000, 4),
-        (UTCTimestamp(Duration::from_millis(1677684677000)), UTCDay(19417), 55877_000_000_000, 3),
-        (UTCTimestamp(Duration::new(u32::MAX as u64 * SECONDS_PER_DAY, 0)), UTCDay(u32::MAX), 0, 0),
-    ];
+#[cfg(test)]
+mod test {
+    use std::time::Duration;
+    use anyhow::Result;
 
-    for (
-        expected_timestamp,
-        utc_days,
-        time_of_day_ns,
-        weekday,
-    )  in test_cases {
-        let timestamp = UTCTimestamp::try_from_days_and_nanos(utc_days, time_of_day_ns)?;
-        assert_eq!(timestamp, expected_timestamp);
-        assert_eq!(UTCDay::from_utc_timestamp(timestamp), utc_days);
-        assert_eq!(timestamp.to_time_of_day_nanos(), time_of_day_ns);
-        assert_eq!(utc_days.to_utc_weekday(), weekday);
+    use crate::time::{
+        UTCTimestamp,
+        UTCDay,
+        UTCTransformations,
+        SECONDS_PER_DAY,
+    };
+
+    #[test]
+    fn test_from_days_and_nanos() -> Result<()> {
+        let test_cases = [
+            (UTCTimestamp(Duration::from_nanos(0)), UTCDay(0), 0, 4),
+            (UTCTimestamp(Duration::from_nanos(123456789)), UTCDay(0), 123456789, 4),
+            (UTCTimestamp(Duration::from_millis(1686756677000)), UTCDay(19522), 55877_000_000_000, 3),
+            (UTCTimestamp(Duration::from_millis(1709220677000)), UTCDay(19782), 55877_000_000_000, 4),
+            (UTCTimestamp(Duration::from_millis(1677684677000)), UTCDay(19417), 55877_000_000_000, 3),
+            (UTCTimestamp(Duration::new(u32::MAX as u64 * SECONDS_PER_DAY, 0)), UTCDay(u32::MAX), 0, 0),
+        ];
+
+        for (
+            expected_timestamp,
+            utc_days,
+            time_of_day_ns,
+            weekday,
+        )  in test_cases {
+            let timestamp = UTCTimestamp::try_from_days_and_nanos(utc_days, time_of_day_ns)?;
+            assert_eq!(timestamp, expected_timestamp);
+            assert_eq!(UTCDay::from_utc_timestamp(timestamp), utc_days);
+            assert_eq!(timestamp.to_time_of_day_ns(), time_of_day_ns);
+            assert_eq!(utc_days.to_utc_weekday(), weekday);
+        }
+
+        Ok(())
     }
-
-    Ok(())
 }

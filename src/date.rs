@@ -139,78 +139,89 @@ impl From<UTCTimestamp> for UTCDate {
     }
 }
 
-#[test]
-fn test_utc_date_from_components() -> Result<()> {
-    let test_cases = [
-        (2023, 6, 14, true),  // valid recent date
-        (1970, 1, 1, true), // valid epoch date
-        (2024, 2, 29, true), // valid leap day
-        (1969, 12, 31, false), // invalid before epoch
-        (2023, 2, 29, false), // invalid date
-        (2023, 0, 10, false), // invalid date, month out of range
-        (2023, 13, 10, false), // invalid date, month out of range
-        (2023, 9, 31, false), // invalid date, day out of range
-        (2023, 9, 0, false), // invalid date, day out of range
-    ];
+#[cfg(test)]
+mod test {
+    use anyhow::{
+        Result,
+        anyhow,
+    };
 
-    for (year, month, day, case_is_valid) in test_cases {
-        match UTCDate::try_from_components(year, month, day) {
-            Ok(_) => {
-                if !case_is_valid {
-                    return Err(anyhow!("Case passed unexpectedly. (date: {:04}-{:02}-{:02})", year, month, day));
-                }
-            },
-            Err(e) => {
-                if case_is_valid {
-                    return Err(e);
+    use crate::time::UTCDay;
+    use crate::date::UTCDate;
+
+    #[test]
+    fn test_utc_date_from_components() -> Result<()> {
+        let test_cases = [
+            (2023, 6, 14, true),  // valid recent date
+            (1970, 1, 1, true), // valid epoch date
+            (2024, 2, 29, true), // valid leap day
+            (1969, 12, 31, false), // invalid before epoch
+            (2023, 2, 29, false), // invalid date
+            (2023, 0, 10, false), // invalid date, month out of range
+            (2023, 13, 10, false), // invalid date, month out of range
+            (2023, 9, 31, false), // invalid date, day out of range
+            (2023, 9, 0, false), // invalid date, day out of range
+        ];
+
+        for (year, month, day, case_is_valid) in test_cases {
+            match UTCDate::try_from_components(year, month, day) {
+                Ok(_) => {
+                    if !case_is_valid {
+                        return Err(anyhow!("Case passed unexpectedly. (date: {:04}-{:02}-{:02})", year, month, day));
+                    }
+                },
+                Err(e) => {
+                    if case_is_valid {
+                        return Err(e);
+                    }
                 }
             }
         }
+
+        Ok(())
     }
 
-    Ok(())
-}
+    #[test]
+    fn test_from_utc_day() -> Result<()> {
+        let test_cases = [
+            (UTCDay::from(0), 1970, 1, 1),
+            (UTCDay::from(30), 1970, 1, 31),
+            (UTCDay::from(19522), 2023, 6, 14),
+            (UTCDay::from(381112), 3013, 6, 14),
+        ];
 
-#[test]
-fn test_from_utc_day() -> Result<()> {
-    let test_cases = [
-        (UTCDay::from(0), 1970, 1, 1),
-        (UTCDay::from(30), 1970, 1, 31),
-        (UTCDay::from(19522), 2023, 6, 14),
-        (UTCDay::from(381112), 3013, 6, 14),
-    ];
+        for (utc_day, year, month, day) in test_cases {
+            let date = UTCDate::from_utc_day(utc_day);
+            let expected = UTCDate {
+                year,
+                month,
+                day
+            };
+            assert_eq!(date, expected);
+        }
 
-    for (utc_day, year, month, day) in test_cases {
-        let date = UTCDate::from_utc_day(utc_day);
-        let expected = UTCDate {
-            year,
-            month,
-            day
-        };
-        assert_eq!(date, expected);
+        Ok(())
     }
 
-    Ok(())
-}
+    #[test]
+    fn test_to_utc_day() -> Result<()> {
+        let test_cases = [
+            (UTCDay::from(0), 1970, 1, 1),
+            (UTCDay::from(30), 1970, 1, 31),
+            (UTCDay::from(19522), 2023, 6, 14),
+            (UTCDay::from(381112), 3013, 6, 14),
+        ];
 
-#[test]
-fn test_to_utc_day() -> Result<()> {
-    let test_cases = [
-        (UTCDay::from(0), 1970, 1, 1),
-        (UTCDay::from(30), 1970, 1, 31),
-        (UTCDay::from(19522), 2023, 6, 14),
-        (UTCDay::from(381112), 3013, 6, 14),
-    ];
+        for (expected, year, month, day) in test_cases {
+            let date = UTCDate {
+                year,
+                month,
+                day
+            };
+            let utc_day = date.to_utc_day();
+            assert_eq!(utc_day, expected);
+        }
 
-    for (expected, year, month, day) in test_cases {
-        let date = UTCDate {
-            year,
-            month,
-            day
-        };
-        let utc_day = date.to_utc_day();
-        assert_eq!(utc_day, expected);
+        Ok(())
     }
-
-    Ok(())
 }
