@@ -3,13 +3,23 @@ use anyhow::{
     anyhow
 };
 
-use crate::time::UTCTimestamp;
+use crate::time::{
+    UTCTimestamp,
+    UTCTransformations, UTCDay
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct UTCDate {
     year: u32,
     month: u8,
     day: u8
+}
+
+impl UTCTransformations for UTCDate {
+    fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self {
+        let utc_day = UTCDay::from_utc_timestamp(timestamp);
+        Self::from_utc_day(utc_day)
+    }
 }
 
 impl UTCDate {
@@ -36,8 +46,8 @@ impl UTCDate {
     /// http://howardhinnant.github.io/date_algorithms.html#civil_from_days
     ///
     /// Simplified for unsigned days/years
-    pub fn from_utc_days(days: u32) -> Self {
-        let z = days + 719468;
+    pub fn from_utc_day(days: UTCDay) -> Self {
+        let z = days.as_raw() + 719468;
         let era = z / 146097;
         let doe = z - (era * 146097);
         let yoe = (doe - (doe / 1460) + (doe / 36524) - (doe / 146096)) / 365;
@@ -57,7 +67,7 @@ impl UTCDate {
     /// http://howardhinnant.github.io/date_algorithms.html#days_from_civil
     ///
     /// Simplified for unsigned days/years
-    pub fn to_utc_days(&self) -> u32 {
+    pub fn to_utc_day(&self) -> UTCDay {
         let m = self.month as u32;
         let d = self.day as u32;
         let y = self.year - ((m <= 2) as u32);
@@ -65,7 +75,8 @@ impl UTCDate {
         let yoe = y - era * 400;
         let doy = ((153 * (if m > 2 { m - 3 } else { m + 9 }) + 2) / 5) + d - 1;
         let doe = (yoe * 365) + (yoe / 4) - (yoe / 100) + doy;
-        (era * 146097) + doe - 719468
+        let days = (era * 146097) + doe - 719468;
+        UTCDay::from_raw(days)
     }
 
     /// Return day component of date
@@ -115,7 +126,7 @@ impl UTCDate {
 
 impl From<UTCTimestamp> for UTCDate {
     fn from(timestamp: UTCTimestamp) -> Self {
-        Self::from_utc_days(timestamp.to_utc_days())
+        Self::from_utc_timestamp(timestamp)
     }
 }
 
@@ -145,23 +156,23 @@ fn test_utc_date_from_components() -> Result<()> {
                     return Err(e);
                 }
             }
-        }   
+        }
     }
 
     Ok(())
 }
 
 #[test]
-fn test_from_utc_days() -> Result<()> {
+fn test_from_utc_day() -> Result<()> {
     let test_cases = [
-        (0, 1970, 1, 1),
-        (30, 1970, 1, 31),
-        (19522, 2023, 6, 14),
-        (381112, 3013, 6, 14),
+        (UTCDay::from_raw(0), 1970, 1, 1),
+        (UTCDay::from_raw(30), 1970, 1, 31),
+        (UTCDay::from_raw(19522), 2023, 6, 14),
+        (UTCDay::from_raw(381112), 3013, 6, 14),
     ];
 
-    for (day_utc, year, month, day) in test_cases {
-        let date = UTCDate::from_utc_days(day_utc);
+    for (utc_day, year, month, day) in test_cases {
+        let date = UTCDate::from_utc_day(utc_day);
         let expected = UTCDate {
             year,
             month,
@@ -174,12 +185,12 @@ fn test_from_utc_days() -> Result<()> {
 }
 
 #[test]
-fn test_to_utc_days() -> Result<()> {
+fn test_to_utc_day() -> Result<()> {
     let test_cases = [
-        (0, 1970, 1, 1),
-        (30, 1970, 1, 31),
-        (19522, 2023, 6, 14),
-        (381112, 3013, 6, 14),
+        (UTCDay::from_raw(0), 1970, 1, 1),
+        (UTCDay::from_raw(30), 1970, 1, 31),
+        (UTCDay::from_raw(19522), 2023, 6, 14),
+        (UTCDay::from_raw(381112), 3013, 6, 14),
     ];
 
     for (expected, year, month, day) in test_cases {
@@ -188,8 +199,8 @@ fn test_to_utc_days() -> Result<()> {
             month,
             day
         };
-        let utc_days = date.to_utc_days();
-        assert_eq!(utc_days, expected);
+        let utc_day = date.to_utc_day();
+        assert_eq!(utc_day, expected);
     }
 
     Ok(())
