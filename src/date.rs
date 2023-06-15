@@ -1,3 +1,9 @@
+//! Date module.
+//!
+//! Implements transformations required for the
+//! proplectic Gregorian Calendar (the *civil* calendar),
+//! to create UTC dates.
+
 use anyhow::{
     Result,
     anyhow
@@ -8,7 +14,9 @@ use crate::time::{
     UTCTransformations, UTCDay
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
+/// UTC Date.
+/// A UTC Date is any calendar date since the Unix epoch date (inclusive).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct UTCDate {
     year: u32,
     month: u8,
@@ -23,6 +31,7 @@ impl UTCTransformations for UTCDate {
 }
 
 impl UTCDate {
+    /// Try to create a UTC Date from provided year, month and day.
     pub fn try_from_components(year: u32, month: u8, day: u8) -> Result<Self> {
         // force create
         let date = Self {
