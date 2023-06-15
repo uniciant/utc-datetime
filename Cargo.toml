@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
+derive_more = { version = "0.99", features = ["add", "mul", "from", "into"] }
