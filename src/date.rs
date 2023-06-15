@@ -102,6 +102,15 @@ impl UTCDate {
             _ => panic!("Month out of range! {:2}", self.month)
         }
     }
+
+    /// Return date as a string in the format:
+    /// `YYYY-MM-DD`
+    ///
+    /// Conforms to ISO 8601:
+    /// https://www.w3.org/TR/NOTE-datetime
+    pub fn to_iso_date(&self) -> String {
+        format!("{:04}-{:02}-{:02}", self.year, self.month, self.day)
+    }
 }
 
 impl From<UTCTimestamp> for UTCDate {
