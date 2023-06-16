@@ -150,12 +150,6 @@ where
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Add, Sub, Mul, Div, From, Into)]
 pub struct UTCDay(u32);
 
-impl UTCTransformations for UTCDay {
-    fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self {
-        Self((timestamp.0.as_secs() / SECONDS_PER_DAY) as u32)
-    }
-}
-
 impl UTCDay {
     /// Calculate and return the day of the week in numerical form
     /// `[0, 6]` represents `[Sun, Sat]`
@@ -164,6 +158,24 @@ impl UTCDay {
     /// http://howardhinnant.github.io/date_algorithms.html#weekday_from_days
     pub fn to_utc_weekday(&self) -> u8 {
         ((self.0 as u64 + 4) % 7) as u8
+    }
+}
+
+impl UTCTransformations for UTCDay {
+    fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self {
+        timestamp.to_utc_day()
+    }
+}
+
+impl From<Duration> for UTCDay {
+    fn from(duration: Duration) -> Self {
+        Self::from_utc_duration(duration)
+    }
+}
+
+impl From<UTCTimestamp> for UTCDay {
+    fn from(timestamp: UTCTimestamp) -> Self {
+        Self::from_utc_timestamp(timestamp)
     }
 }
 
