@@ -16,14 +16,20 @@ Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:0
 - Nanosecond resolution
 
 ## Examples (exhaustive)
-```Rust
+ ```Rust
     use std::time::Duration;
+
     use utc_datetime::UTCDatetime;
-    use utc_datetime::time::UTCTimestamp;
+    use utc_datetime::time::{
+        UTCTimestamp,
+        UTCDay,
+    };
     use utc_datetime::date::UTCDate;
+
     // An example duration.
     // Whan a duration is used, it is assumed to be relative to the unix epoch.
     let example_duration = Duration::from_millis(1686824288903);
+
     // UTC Timestamp from a duration
     let utc_timestamp = UTCTimestamp::from(example_duration);
     // UTC timestamp from the local system time.
@@ -31,11 +37,12 @@ Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:0
     // UTC Timestamp from a u64 measurement directly.
     let utc_timestamp = UTCTimestamp::from_millis(1686824288903);
     // Use UTC Timestamp to get time-of-day
-    let time_of_day_ns: u64 = utc_timestamp.to_time_of_day_ns()
+    let time_of_day_ns: u64 = utc_timestamp.to_time_of_day_ns();
     // Use UTC Timestamp to get days since epoch (ie. UTC Day)
-    let utc_day: UTCDday = utc_timestamp.to_utc_day()
+    let utc_day: UTCDay = utc_timestamp.to_utc_day();
+
     // UTC Day from an integer
-    let utc_day = UTCDay::from(19523429);
+    let utc_day = UTCDay::from(19523);
     // Use UTC Day to get the weekday
     let weekday = utc_day.to_utc_weekday();
 
@@ -55,10 +62,11 @@ Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:0
     // Get date string formatted according to ISO 8601 (`YYYY-MM-DD`)
     let iso_date = utc_date.to_iso_date();
     assert_eq!(iso_date, "2023-06-15");
+
     // UTC Datetime directly from raw components
     let utc_datetime = UTCDatetime::try_from_raw_components(year, month, day, time_of_day_ns).unwrap();
     // UTC Datetime from date and time-of-day components
-    let utc_datetime = UTCDatetime::try_from_components(utc_date, time_of_day_ns).unwrap()
+    let utc_datetime = UTCDatetime::try_from_components(utc_date, time_of_day_ns).unwrap();
     // Get date and time-of-day components
     let (utc_date, time_of_day_ns) = (utc_datetime.to_date(), utc_datetime.to_time_of_day_ns());
     let (utc_date, time_of_day_ns) = utc_datetime.to_components();
@@ -69,9 +77,11 @@ Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:0
     // Get UTC datetime string formatted according to ISO 8601 (`YYYY-MM-DDThh:mm:ssZ`)
     let iso_datetime = utc_datetime.to_iso_datetime();
     assert_eq!(iso_datetime, "2023-06-15T10:18:08Z");
+
     {
         // `UTCTransformations` can be used to create shortcuts to the desired type!
         use utc_datetime::time::UTCTransformations;
+
         // Example shortcuts using `UTCTransformations`
         // UTC Day / UTC Date / UTC Datetime from a duration
         let utc_day = UTCDay::from_utc_duration(example_duration); // OR
@@ -80,6 +90,7 @@ Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:0
         let utc_date = UTCDate::from(example_duration);
         let utc_datetime = UTCDatetime::from_utc_duration(example_duration); // OR
         let utc_datetime = UTCDatetime::from(example_duration);
+
         // UTC Day / UTC Date / UTC Datetime from a timestamp
         let utc_day = UTCDay::from_utc_timestamp(utc_timestamp); // OR
         let utc_day = UTCDay::from(utc_timestamp);
@@ -87,10 +98,12 @@ Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:0
         let utc_date = UTCDate::from(utc_timestamp);
         let utc_datetime = UTCDatetime::from_utc_timestamp(utc_timestamp); // OR
         let utc_datetime = UTCDatetime::from(utc_timestamp);
+
         // UTC Day / UTC Date / UTC Datetime from local system time
         let utc_day = UTCDay::try_from_system_time().unwrap();
         let utc_date = UTCDate::try_from_system_time().unwrap();
         let utc_datetime = UTCDatetime::try_from_system_time().unwrap();
+
         // UTC Day / UTC Date / UTC Datetime from u64 epoch measurements
         let utc_day = UTCDay::from_utc_secs(1686824288);
         let utc_date = UTCDate::from_utc_millis(1686824288_000);
