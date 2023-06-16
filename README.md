@@ -6,7 +6,7 @@ It prioritizes being space-optimal and efficient.
 
 ```toml
 [dependancies]
-utc-datetime = "0.1"
+utc-dt = "0.1"
 ```
 For extended/niche features and local timezone support see [chrono](https://github.com/chronotope/chrono) or [time](https://github.com/time-rs/time).
 
@@ -22,7 +22,7 @@ Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:0
 - Obtain information on a date or time, such as if it occurs within a leap year, or the number of days in the month.
 - Format dates according to ISO 8601 (`YYYY-MM-DD`)
 - Format datetimes according to ISO 8601 (`YYYY-MM-DDThh:mm:ssZ`)
-- Provides constants useful for time transformations (`use utc-datetime::constants::*;`)
+- Provides constants useful for time transformations (`use utc-dt::constants::*;`)
 - Nanosecond resolution.
 - `#![no_std]` support.
 

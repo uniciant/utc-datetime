@@ -6,7 +6,7 @@
 //!
 //! ```toml
 //! [dependancies]
-//! utc-datetime = "0.1"
+//! utc-dt = "0.1"
 //! ```
 //! For extended/niche features and local timezone support see [chrono](https://github.com/chronotope/chrono) or [time](https://github.com/time-rs/time).
 //!
@@ -22,7 +22,7 @@
 //! - Obtain information on a date or time, such as if it occurs within a leap year, or the number of days in the month.
 //! - Format dates according to ISO 8601 (`YYYY-MM-DD`)
 //! - Format datetimes according to ISO 8601 (`YYYY-MM-DDThh:mm:ssZ`)
-//! - Provides constants useful for time transformations (`use utc-datetime::constants::*;`)
+//! - Provides constants useful for time transformations (`use utc-dt::constants::*;`)
 //! - Nanosecond resolution.
 //! - `#![no_std]` support.
 //!
