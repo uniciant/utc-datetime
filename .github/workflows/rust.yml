@@ -21,6 +21,20 @@ jobs:
     - name: Check formatting
       run: cargo fmt --all --check
 
+  doc:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Doc
+      run: cargo doc
+
+  doc-no-std:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Doc
+      run: cargo doc --no-default-features
+
   build:
     runs-on: ubuntu-latest
     steps:
