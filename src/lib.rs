@@ -179,7 +179,7 @@ impl UTCDatetime {
     /// Will try to create a `UTCDate` internally.
     pub fn try_from_raw_components(year: u32, month: u8, day: u8, time_of_day_ns: u64) -> Result<Self> {
         let date = UTCDate::try_from_components(year, month, day)?;
-        Ok(Self::try_from_components(date, time_of_day_ns)?)
+        Self::try_from_components(date, time_of_day_ns)
     }
 
     /// Get copy of the internal date and time-of-day components
