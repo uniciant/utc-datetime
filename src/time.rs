@@ -2,23 +2,10 @@
 //!
 //! Implements core time concepts via UTC Timestamps and UTC Days.
 
-use std::time::{
-    Duration,
-    SystemTime
-};
+use std::time::{Duration, SystemTime};
 
-use anyhow::{
-    Result,
-    anyhow
-};
-use derive_more::{
-    Add,
-    Sub,
-    Mul,
-    Div,
-    From,
-    Into,
-};
+use anyhow::{anyhow, Result};
+use derive_more::{Add, Div, From, Into, Mul, Sub};
 
 use crate::constants::*;
 
@@ -37,15 +24,17 @@ impl UTCTimestamp {
     /// Try to create a UTC Timestamp from UTC day and time-of-day components.
     pub fn try_from_days_and_nanos(days: UTCDay, time_of_day_ns: u64) -> Result<Self> {
         if time_of_day_ns >= NANOS_PER_DAY {
-            return Err(anyhow!("Nanoseconds not within a day! (time_of_day_ns: {})", time_of_day_ns));
+            return Err(anyhow!(
+                "Nanoseconds not within a day! (time_of_day_ns: {})",
+                time_of_day_ns
+            ));
         }
         Ok(Self::from_days_and_nanos(days, time_of_day_ns))
     }
 
     /// Try to create a UTC Timestamp from the local system time.
     pub fn try_from_system_time() -> Result<Self> {
-        let duration = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)?;
+        let duration = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
         Ok(duration.into())
     }
 
@@ -71,7 +60,7 @@ impl UTCTimestamp {
 
     /// Get the UTC time-of-day in nanoseconds.
     pub fn to_time_of_day_ns(&self) -> u64 {
-        ((self.0.as_secs() % SECONDS_PER_DAY)  * NANOS_PER_SECOND) + (self.0.subsec_nanos() as u64)
+        ((self.0.as_secs() % SECONDS_PER_DAY) * NANOS_PER_SECOND) + (self.0.subsec_nanos() as u64)
     }
 
     /// Get the number of UTC days since the Unix Epoch.
@@ -83,7 +72,7 @@ impl UTCTimestamp {
 /// Common methods for creating UTC Datetime structures.
 pub trait UTCTransformations
 where
-    Self: Sized
+    Self: Sized,
 {
     /// Create from a duration measured from the Unix Epoch.
     fn from_utc_duration(duration: Duration) -> Self {
@@ -121,7 +110,23 @@ where
 
 /// UTC Day count.
 /// UTC Days is the number of days since the Unix Epoch.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Add, Sub, Mul, Div, From, Into)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Default,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    From,
+    Into,
+)]
 pub struct UTCDay(u32);
 
 impl UTCDay {
@@ -155,33 +160,48 @@ impl From<UTCTimestamp> for UTCDay {
 
 #[cfg(test)]
 mod test {
-    use std::time::Duration;
     use anyhow::Result;
+    use std::time::Duration;
 
-    use crate::time::{
-        UTCTimestamp,
-        UTCDay,
-        UTCTransformations,
-        SECONDS_PER_DAY,
-    };
+    use crate::time::{UTCDay, UTCTimestamp, UTCTransformations, SECONDS_PER_DAY};
 
     #[test]
     fn test_from_days_and_nanos() -> Result<()> {
         let test_cases = [
             (UTCTimestamp(Duration::from_nanos(0)), UTCDay(0), 0, 4),
-            (UTCTimestamp(Duration::from_nanos(123456789)), UTCDay(0), 123456789, 4),
-            (UTCTimestamp(Duration::from_millis(1686756677000)), UTCDay(19522), 55877_000_000_000, 3),
-            (UTCTimestamp(Duration::from_millis(1709220677000)), UTCDay(19782), 55877_000_000_000, 4),
-            (UTCTimestamp(Duration::from_millis(1677684677000)), UTCDay(19417), 55877_000_000_000, 3),
-            (UTCTimestamp(Duration::new(u32::MAX as u64 * SECONDS_PER_DAY, 0)), UTCDay(u32::MAX), 0, 0),
+            (
+                UTCTimestamp(Duration::from_nanos(123456789)),
+                UTCDay(0),
+                123456789,
+                4,
+            ),
+            (
+                UTCTimestamp(Duration::from_millis(1686756677000)),
+                UTCDay(19522),
+                55877_000_000_000,
+                3,
+            ),
+            (
+                UTCTimestamp(Duration::from_millis(1709220677000)),
+                UTCDay(19782),
+                55877_000_000_000,
+                4,
+            ),
+            (
+                UTCTimestamp(Duration::from_millis(1677684677000)),
+                UTCDay(19417),
+                55877_000_000_000,
+                3,
+            ),
+            (
+                UTCTimestamp(Duration::new(u32::MAX as u64 * SECONDS_PER_DAY, 0)),
+                UTCDay(u32::MAX),
+                0,
+                0,
+            ),
         ];
 
-        for (
-            expected_timestamp,
-            utc_days,
-            time_of_day_ns,
-            weekday,
-        )  in test_cases {
+        for (expected_timestamp, utc_days, time_of_day_ns, weekday) in test_cases {
             let timestamp = UTCTimestamp::try_from_days_and_nanos(utc_days, time_of_day_ns)?;
             assert_eq!(timestamp, expected_timestamp);
             assert_eq!(UTCDay::from_utc_timestamp(timestamp), utc_days);

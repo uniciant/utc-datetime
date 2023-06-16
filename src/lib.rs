@@ -138,17 +138,11 @@ pub mod constants;
 
 use std::time::Duration;
 
-use anyhow::{
-    Result,
-    anyhow
-};
+use anyhow::{anyhow, Result};
 
-use date::UTCDate;
-use time::{
-    UTCTimestamp,
-    UTCTransformations,
-};
 use constants::*;
+use date::UTCDate;
+use time::{UTCTimestamp, UTCTransformations};
 
 /// UTC Datetime.
 /// A UTC Datetime consists of a date component and a time-of-day component
@@ -170,14 +164,22 @@ impl UTCDatetime {
     /// Try to create a datetime from date and time-of-day components.
     pub fn try_from_components(date: UTCDate, time_of_day_ns: u64) -> Result<Self> {
         if time_of_day_ns >= NANOS_PER_DAY {
-            return Err(anyhow!("Nanoseconds not within a day! (time_of_day_ns: {})", time_of_day_ns));
+            return Err(anyhow!(
+                "Nanoseconds not within a day! (time_of_day_ns: {})",
+                time_of_day_ns
+            ));
         }
         Ok(Self::from_components(date, time_of_day_ns))
     }
 
     /// Try to create a datetime from underlying raw components.
     /// Will try to create a `UTCDate` internally.
-    pub fn try_from_raw_components(year: u32, month: u8, day: u8, time_of_day_ns: u64) -> Result<Self> {
+    pub fn try_from_raw_components(
+        year: u32,
+        month: u8,
+        day: u8,
+        time_of_day_ns: u64,
+    ) -> Result<Self> {
         let date = UTCDate::try_from_components(year, month, day)?;
         Self::try_from_components(date, time_of_day_ns)
     }
@@ -257,11 +259,8 @@ impl From<Duration> for UTCDatetime {
 #[cfg(test)]
 mod test {
     use anyhow::Result;
-    use crate::{
-        UTCDatetime,
-        time::UTCTransformations,
-    };
 
+    use crate::{time::UTCTransformations, UTCDatetime};
 
     #[test]
     fn test_datetime_from_timestamp() -> Result<()> {
