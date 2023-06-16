@@ -132,6 +132,8 @@
 
 pub mod date;
 pub mod time;
+#[rustfmt::skip]
+pub mod constants;
 
 use std::time::Duration;
 
@@ -144,11 +146,8 @@ use date::UTCDate;
 use time::{
     UTCTimestamp,
     UTCTransformations,
-    NANOS_PER_DAY,
-    NANOS_PER_HOUR,
-    NANOS_PER_MINUTE,
-    NANOS_PER_SECOND,
 };
+use constants::*;
 
 /// UTC Datetime.
 /// A UTC Datetime consists of a date component and a time-of-day component
