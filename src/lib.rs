@@ -20,7 +20,10 @@
 //!     use std::time::Duration;
 //!
 //!     use utc_datetime::UTCDatetime;
-//!     use utc_datetime::time::UTCTimestamp;
+//!     use utc_datetime::time::{
+//!         UTCTimestamp,
+//!         UTCDay,
+//!     };
 //!     use utc_datetime::date::UTCDate;
 //!
 //!     // An example duration.
@@ -34,15 +37,15 @@
 //!     // UTC Timestamp from a u64 measurement directly.
 //!     let utc_timestamp = UTCTimestamp::from_millis(1686824288903);
 //!     // Use UTC Timestamp to get time-of-day
-//!     let time_of_day_ns: u64 = utc_timestamp.to_time_of_day_ns()
+//!     let time_of_day_ns: u64 = utc_timestamp.to_time_of_day_ns();
 //!     // Use UTC Timestamp to get days since epoch (ie. UTC Day)
-//!     let utc_day: UTCDday = utc_timestamp.to_utc_day()
+//!     let utc_day: UTCDay = utc_timestamp.to_utc_day();
 //!
 //!     // UTC Day from an integer
-//!     let utc_day = UTCDay::from(19523429);
+//!     let utc_day = UTCDay::from(19523);
 //!     // Use UTC Day to get the weekday
 //!     let weekday = utc_day.to_utc_weekday();
-
+//!
 //!     // UTC Date directly from components
 //!     let utc_date = UTCDate::try_from_components(2023, 6, 15).unwrap();
 //!     // UTC Date from UTC Day
@@ -63,7 +66,7 @@
 //!     // UTC Datetime directly from raw components
 //!     let utc_datetime = UTCDatetime::try_from_raw_components(year, month, day, time_of_day_ns).unwrap();
 //!     // UTC Datetime from date and time-of-day components
-//!     let utc_datetime = UTCDatetime::try_from_components(utc_date, time_of_day_ns).unwrap()
+//!     let utc_datetime = UTCDatetime::try_from_components(utc_date, time_of_day_ns).unwrap();
 //!     // Get date and time-of-day components
 //!     let (utc_date, time_of_day_ns) = (utc_datetime.to_date(), utc_datetime.to_time_of_day_ns());
 //!     let (utc_date, time_of_day_ns) = utc_datetime.to_components();
