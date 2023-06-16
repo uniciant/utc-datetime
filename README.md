@@ -111,9 +111,9 @@ Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:0
         let utc_datetime = UTCDatetime::try_from_system_time().unwrap();
 
         // UTC Day / UTC Date / UTC Datetime from u64 epoch measurements
-        let utc_day = UTCDay::from_utc_secs(1686824288);
-        let utc_date = UTCDate::from_utc_millis(1686824288_000);
-        let utc_datetime = UTCDate::from_utc_micros(1686824288_000_000);
+        let utc_day = UTCDay::from_utc_secs(1_686_824_288);
+        let utc_date = UTCDate::from_utc_millis(1_686_824_288_000);
+        let utc_datetime = UTCDate::from_utc_micros(1_686_824_288_000_000);
     }
 ```
 
