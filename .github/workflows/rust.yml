@@ -18,10 +18,8 @@ jobs:
     - uses: actions/checkout@v3
     - name: Run Clippy
       run: cargo clippy
-      run: cargo clippy --no-default-features
     - name: Check formatting
       run: cargo fmt --all --check
-      run: cargo fmt --all --check --no-default-features
 
   build:
     runs-on: ubuntu-latest
