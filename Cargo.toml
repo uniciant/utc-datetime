@@ -1,5 +1,5 @@
 [package]
-name = "utc-datetime"
+name = "utc-dt"
 version = "0.1.0"
 authors = ["Reece Kibble <reecek@uniciant.com>"]
 categories = ["date-and-time", "no-std", "parsing"]
