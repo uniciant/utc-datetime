@@ -75,6 +75,11 @@ impl UTCTimestamp {
         Ok(duration.into())
     }
 
+    /// Create a timestamp directly from seconds since the Unix Epoch.
+    pub fn from_secs(s: u64) -> Self {
+        Self(Duration::from_secs(s))
+    }
+
     /// Create a timestamp directly from milliseconds since the Unix Epoch.
     pub fn from_millis(ms: u64) -> Self {
         Self(Duration::from_millis(ms))
@@ -94,6 +99,11 @@ impl UTCTimestamp {
     pub fn to_time_of_day_ns(&self) -> u64 {
         ((self.0.as_secs() % SECONDS_PER_DAY)  * NANOS_PER_SECOND) + (self.0.subsec_nanos() as u64)
     }
+
+    /// Get the number of UTC days since the Unix Epoch.
+    pub fn to_utc_day(&self) -> UTCDay {
+        ((self.0.as_secs() / SECONDS_PER_DAY) as u32).into()
+    }
 }
 
 /// Common methods for creating UTC Datetime structures.
@@ -110,6 +120,11 @@ where
     fn try_from_system_time() -> Result<Self> {
         let timestamp = UTCTimestamp::try_from_system_time()?;
         Ok(Self::from_utc_timestamp(timestamp))
+    }
+    /// Create from seconds measured from the Unix Epoch.
+    fn from_utc_secs(s: u64) -> Self {
+        let timestamp = UTCTimestamp::from_secs(s);
+        Self::from_utc_timestamp(timestamp)
     }
     /// Create from milliseconds measured from the Unix Epoch.
     fn from_utc_millis(ms: u64) -> Self {
