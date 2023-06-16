@@ -4,6 +4,10 @@
 //! UTC Datetime aims to be a user friendly date and time alternative, focused on core features.
 //! It prioritizes being space-optimal and efficient.
 //!
+//! ```toml
+//! [dependancies]
+//! utc-datetime = "0.1"
+//! ```
 //! For extended/niche features and local timezone support see [chrono](https://github.com/chronotope/chrono) or [time](https://github.com/time-rs/time).
 //!
 //! ## NOTE
