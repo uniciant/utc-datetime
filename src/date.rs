@@ -41,8 +41,10 @@ impl UTCDate {
         Ok(date)
     }
 
+    /// Create a UTC Date from the number of days since the epoch.
+    ///
     /// Reference:
-    /// http://howardhinnant.github.io/date_algorithms.html#civil_from_days
+    /// <http://howardhinnant.github.io/date_algorithms.html#civil_from_days>
     ///
     /// Simplified for unsigned days/years
     pub fn from_utc_day(utc_day: UTCDay) -> Self {
@@ -58,8 +60,10 @@ impl UTCDate {
         Self { day, month, year }
     }
 
+    /// Get the days since the epoch from the UTC Date
+    ///
     /// Reference:
-    /// http://howardhinnant.github.io/date_algorithms.html#days_from_civil
+    /// <http://howardhinnant.github.io/date_algorithms.html#days_from_civil>
     ///
     /// Simplified for unsigned days/years
     pub fn to_utc_day(&self) -> UTCDay {
@@ -104,8 +108,9 @@ impl UTCDate {
     }
 
     /// Returns whether date is within a leap year.
+    ///
     /// Reference:
-    /// http://howardhinnant.github.io/date_algorithms.html#is_leap
+    /// <http://howardhinnant.github.io/date_algorithms.html#is_leap>
     pub fn is_leap_year(&self) -> bool {
         (self.year % 4 == 0) && ((self.year % 100 != 0) || (self.year % 400 == 0))
     }
@@ -131,7 +136,7 @@ impl UTCDate {
     /// `YYYY-MM-DD`
     ///
     /// Conforms to ISO 8601:
-    /// https://www.w3.org/TR/NOTE-datetime
+    /// <https://www.w3.org/TR/NOTE-datetime>
     #[cfg(feature = "std")]
     pub fn to_iso_date(&self) -> String {
         format!("{:04}-{:02}-{:02}", self.year, self.month, self.day)

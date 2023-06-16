@@ -139,7 +139,7 @@ impl UTCDay {
     /// `[0, 6]` represents `[Sun, Sat]`
     ///
     /// Reference:
-    /// http://howardhinnant.github.io/date_algorithms.html#weekday_from_days
+    /// <http://howardhinnant.github.io/date_algorithms.html#weekday_from_days>
     pub fn to_utc_weekday(&self) -> u8 {
         ((self.0 as u64 + 4) % 7) as u8
     }

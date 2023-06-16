@@ -245,7 +245,7 @@ impl UTCDatetime {
     /// `YYYY-MM-DDThh:mm:ssZ`
     ///
     /// Conforms to ISO 8601:
-    /// https://www.w3.org/TR/NOTE-datetime
+    /// <https://www.w3.org/TR/NOTE-datetime>
     #[cfg(feature = "std")]
     pub fn to_iso_datetime(&self) -> String {
         let date = self.date.to_iso_date();
