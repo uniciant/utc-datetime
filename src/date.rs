@@ -1,7 +1,7 @@
 //! Date module.
 //!
 //! Implements transformations required for the
-//! proplectic Gregorian Calendar (the *civil* calendar),
+//! proleptic Gregorian Calendar (the *civil* calendar),
 //! to create UTC dates.
 
 use std::time::Duration;
@@ -111,7 +111,7 @@ impl UTCDate {
     }
 
     /// Returns the number of days within the month of the date.
-    /// Leap years are acconted for.
+    /// Leap years are accounted for.
     pub fn days_in_month(&self) -> u8 {
         match self.month {
             1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,

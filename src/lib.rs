@@ -5,7 +5,7 @@
 //! Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:00:00`. This library takes advantage of this assumption to simplify the API and internal logic.
 //!
 //! ## Features
-//! - Create UTC timestamps and datetimes from `Duration`s, or directly from unsigned UTC subsecond measurements, or from the system time.
+//! - Create UTC timestamps and datetimes from `Duration`s, or directly from unsigned UTC sub-second measurements, or from the system time.
 //! - Determine the civil calendar date.
 //! - Determine the time of day.
 //! - Determine the weekday.
@@ -28,7 +28,7 @@
 //!     use utc_datetime::date::UTCDate;
 //!
 //!     // An example duration.
-//!     // Whan a duration is used, it is assumed to be relative to the unix epoch.
+//!     // When a duration is used, it is assumed to be relative to the unix epoch.
 //!     let example_duration = Duration::from_millis(1686824288903);
 //!
 //!     // UTC Timestamp from a duration
@@ -78,7 +78,7 @@
 //!     let (utc_date, time_of_day_ns) = utc_datetime.to_components();
 //!     // Get the time in hours, minutes and seconds
 //!     let (hours, minutes, seconds) = utc_datetime.to_hours_minutes_seconds();
-//!     // Get the subsecond component of the time of day, in nanoseconds
+//!     // Get the sub-second component of the time of day, in nanoseconds
 //!     let subsec_ns = utc_datetime.to_subsec_ns();
 //!     // Get UTC datetime string formatted according to ISO 8601 (`YYYY-MM-DDThh:mm:ssZ`)
 //!     let iso_datetime = utc_datetime.to_iso_datetime();
@@ -218,7 +218,7 @@ impl UTCDatetime {
         (hours, minutes, seconds)
     }
 
-    /// Get the subsecond component of the time-of-day
+    /// Get the sub-second component of the time-of-day
     /// expressed in nanoseconds.
     pub fn to_subsec_ns(&self) -> u32 {
         (self.time_of_day_ns % NANOS_PER_SECOND) as u32
