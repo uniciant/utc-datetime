@@ -5,6 +5,10 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["std"]
+std = []
+
 [dependencies]
 anyhow = "1"
 derive_more = { version = "0.99", features = ["add", "mul", "from", "into"] }
