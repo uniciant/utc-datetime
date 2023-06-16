@@ -20,7 +20,7 @@
 //! - Format datetimes according to ISO 8601 (`YYYY-MM-DDThh:mm:ssZ`)
 //! - Provides constants useful for time transformations (`use utc-datetime::constants::*;`)
 //! - Nanosecond resolution.
-//! - `no_std` support. Enable by importing with `features = ["no_std"]`
+//! - `#![no_std]` support.
 //!
 //! ## Example (exhaustive)
 //! ```Rust
@@ -279,7 +279,7 @@ mod test {
     #[test]
     fn test_datetime_from_raw_components() -> Result<()> {
         let test_cases = [
-            (1970, 1, 1, 0, 0, 0), // thu, 00:00:00.000
+            (1970, 1, 1, 0, 0, 0),                                 // thu, 00:00:00.000
             (2023, 6, 14, 33_609_648_000_000, 19522, 648_000_000), // wed, 09:20:09.648
         ];
 

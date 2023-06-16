@@ -174,12 +174,7 @@ mod test {
     fn test_from_days_and_nanos() -> Result<()> {
         let test_cases = [
             (UTCTimestamp::from_nanos(0), UTCDay(0), 0, 4),
-            (
-                UTCTimestamp::from_nanos(123456789),
-                UTCDay(0),
-                123456789,
-                4,
-            ),
+            (UTCTimestamp::from_nanos(123456789), UTCDay(0), 123456789, 4),
             (
                 UTCTimestamp::from_millis(1686756677000),
                 UTCDay(19522),
