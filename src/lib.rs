@@ -16,7 +16,7 @@
 //! - Nanosecond resolution
 //!
 //! ## Example (exhaustive)
-//! ```rust
+//! ```Rust
 //!     use std::time::Duration;
 //!
 //!     use utc_datetime::UTCDatetime;
