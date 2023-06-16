@@ -17,20 +17,36 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Run Clippy
-      run: cargo clippy --all-targets --all-features
+      run: cargo clippy
+      run: cargo clippy --no-default-features
     - name: Check formatting
       run: cargo fmt --all --check
+      run: cargo fmt --all --check --no-default-features
 
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - name: Build
-      run: cargo build --all-features
+      run: cargo build
+
+  build-no-std:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build
+      run: cargo build --no-default-features
 
   test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - name: Run tests
-      run: cargo test --all-features
+      run: cargo test
+
+  test-no-std:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run tests
+      run: cargo test --no-default-features
