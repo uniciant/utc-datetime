@@ -1,5 +1,10 @@
 # UTC Datetime
-Simple, fast and small UTC dates, timestamps and datetimes library for Rust
+Simple, fast and small UTC date, timestamp and datetime library for Rust.
+
+UTC Datetime aims to be a user friendly date and time alternative, focused on core features.
+It prioritizes being space-optimal and efficient.
+
+For extended/niche features and local timezone support see [chrono](https://github.com/chronotope/chrono) or [time](https://github.com/time-rs/time).
 
 ## NOTE
 Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:00:00`. This library takes advantage of this assumption to simplify the API and internal logic.
@@ -14,11 +19,12 @@ Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:0
 - Format dates according to ISO 8601 (`YYYY-MM-DD`)
 - Format datetimes according to ISO 8601 (`YYYY-MM-DDThh:mm:ssZ`)
 - Provides constants useful for time transformations (`use utc-datetime::constants::*;`)
-- Nanosecond resolution
+- Nanosecond resolution.
+- #![no_std] support.
 
 ## Examples (exhaustive)
  ```Rust
-    use std::time::Duration;
+    use core::time::Duration;
 
     use utc_datetime::UTCDatetime;
     use utc_datetime::time::{
