@@ -21,6 +21,8 @@
 pub mod date;
 pub mod time;
 
+use std::time::Duration;
+
 use anyhow::{
     Result,
     anyhow
@@ -43,14 +45,6 @@ use time::{
 pub struct UTCDatetime {
     date: UTCDate,
     time_of_day_ns: u64,
-}
-
-impl UTCTransformations for UTCDatetime {
-    fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self {
-        let tod_ns = timestamp.to_time_of_day_ns();
-        let date = UTCDate::from_utc_timestamp(timestamp);
-        Self::from_components(date, tod_ns)
-    }
 }
 
 impl UTCDatetime {
@@ -100,19 +94,6 @@ impl UTCDatetime {
         self.time_of_day_ns
     }
 
-    /// Get date of the datetime expressed as years, days and months
-    ///
-    /// Returns tuple: `(years: u32, months: u8, days: u8)`
-    pub fn to_years_months_days(&self) -> (u32, u8, u8) {
-        (self.date.year(), self.date.month(), self.date.day())
-    }
-
-    /// Get the subsecond component of the time-of-day
-    /// expressed in nanoseconds.
-    pub fn to_subseconds_nanos(&self) -> u32 {
-        (self.time_of_day_ns % NANOS_PER_SECOND) as u32
-    }
-
     /// Get the time-of-day expressed as hours minutes and seconds.
     ///
     /// Returns tuple `(hours: u8, minutes: u8, seconds: u8)`
@@ -121,6 +102,12 @@ impl UTCDatetime {
         let minutes = ((self.time_of_day_ns % NANOS_PER_HOUR) / NANOS_PER_MINUTE) as u8;
         let seconds = ((self.time_of_day_ns % NANOS_PER_MINUTE) / NANOS_PER_SECOND) as u8;
         (hours, minutes, seconds)
+    }
+
+    /// Get the subsecond component of the time-of-day
+    /// expressed in nanoseconds.
+    pub fn to_subsec_ns(&self) -> u32 {
+        (self.time_of_day_ns % NANOS_PER_SECOND) as u32
     }
 
     /// Return datetime as a string in the format:
@@ -135,9 +122,23 @@ impl UTCDatetime {
     }
 }
 
+impl UTCTransformations for UTCDatetime {
+    fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self {
+        let tod_ns = timestamp.to_time_of_day_ns();
+        let date = UTCDate::from_utc_timestamp(timestamp);
+        Self::from_components(date, tod_ns)
+    }
+}
+
 impl From<UTCTimestamp> for UTCDatetime {
     fn from(timestamp: UTCTimestamp) -> Self {
         Self::from_utc_timestamp(timestamp)
+    }
+}
+
+impl From<Duration> for UTCDatetime {
+    fn from(duration: Duration) -> Self {
+        Self::from_utc_duration(duration)
     }
 }
 
