@@ -64,7 +64,12 @@ Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:0
     assert_eq!(iso_date, "2023-06-15");
 
     // UTC Datetime directly from raw components
-    let utc_datetime = UTCDatetime::try_from_raw_components(year, month, day, time_of_day_ns).unwrap();
+    let utc_datetime = UTCDatetime::try_from_raw_components(
+        year,
+        month,
+        day,
+        time_of_day_ns
+    ).unwrap();
     // UTC Datetime from date and time-of-day components
     let utc_datetime = UTCDatetime::try_from_components(utc_date, time_of_day_ns).unwrap();
     // Get date and time-of-day components

@@ -64,7 +64,12 @@
 //!     assert_eq!(iso_date, "2023-06-15");
 //!
 //!     // UTC Datetime directly from raw components
-//!     let utc_datetime = UTCDatetime::try_from_raw_components(year, month, day, time_of_day_ns).unwrap();
+//!     let utc_datetime = UTCDatetime::try_from_raw_components(
+//!         year,
+//!         month,
+//!         day,
+//!         time_of_day_ns
+//!     ).unwrap();
 //!     // UTC Datetime from date and time-of-day components
 //!     let utc_datetime = UTCDatetime::try_from_components(utc_date, time_of_day_ns).unwrap();
 //!     // Get date and time-of-day components
