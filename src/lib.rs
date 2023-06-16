@@ -272,7 +272,7 @@ mod test {
     fn test_datetime_from_raw_components() -> Result<()> {
         let test_cases = [
             (1970, 1, 1, 0, "1970-01-01T00:00:00Z"), // thu, 00:00:00.000
-            (2023, 6, 14, 33609648_000_000, "2023-06-14T09:20:09Z"), // wed, 09:20:09.648
+            (2023, 6, 14, 33_609_648_000_000, "2023-06-14T09:20:09Z"), // wed, 09:20:09.648
         ];
 
         for (year, month, day, time_of_day_ns, expected_iso_datetime) in test_cases {

@@ -178,19 +178,19 @@ mod test {
             (
                 UTCTimestamp(Duration::from_millis(1686756677000)),
                 UTCDay(19522),
-                55877_000_000_000,
+                55_877_000_000_000,
                 3,
             ),
             (
                 UTCTimestamp(Duration::from_millis(1709220677000)),
                 UTCDay(19782),
-                55877_000_000_000,
+                55_877_000_000_000,
                 4,
             ),
             (
                 UTCTimestamp(Duration::from_millis(1677684677000)),
                 UTCDay(19417),
-                55877_000_000_000,
+                55_877_000_000_000,
                 3,
             ),
             (
