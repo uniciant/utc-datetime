@@ -5,8 +5,8 @@ UTC Datetime aims to be a user friendly date and time alternative, focused on co
 It prioritizes being space-optimal and efficient.
 
 ```toml
-[dependancies]
-utc-datetime = "0.1"
+[dependencies]
+utc-dt = "0.1"
 ```
 For extended/niche features and local timezone support see [chrono](https://github.com/chronotope/chrono) or [time](https://github.com/time-rs/time).
 
@@ -22,7 +22,7 @@ Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:0
 - Obtain information on a date or time, such as if it occurs within a leap year, or the number of days in the month.
 - Format dates according to ISO 8601 (`YYYY-MM-DD`)
 - Format datetimes according to ISO 8601 (`YYYY-MM-DDThh:mm:ssZ`)
-- Provides constants useful for time transformations (`use utc-datetime::constants::*;`)
+- Provides constants useful for time transformations (`use utc-dt::constants::*;`)
 - Nanosecond resolution.
 - `#![no_std]` support.
 
@@ -30,12 +30,12 @@ Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:0
  ```Rust
     use core::time::Duration;
 
-    use utc_datetime::UTCDatetime;
-    use utc_datetime::time::{
+    use utc_dt::UTCDatetime;
+    use utc_dt::time::{
         UTCTimestamp,
         UTCDay,
     };
-    use utc_datetime::date::UTCDate;
+    use utc_dt::date::UTCDate;
 
     // An example duration.
     // When a duration is used, it is assumed to be relative to the unix epoch.
@@ -96,7 +96,7 @@ Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:0
 
     {
         // `UTCTransformations` can be used to create shortcuts to the desired type!
-        use utc_datetime::time::UTCTransformations;
+        use utc_dt::time::UTCTransformations;
 
         // Example shortcuts using `UTCTransformations`
         // UTC Day / UTC Date / UTC Datetime from a duration
