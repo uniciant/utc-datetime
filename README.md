@@ -20,7 +20,7 @@ Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:0
 - Format datetimes according to ISO 8601 (`YYYY-MM-DDThh:mm:ssZ`)
 - Provides constants useful for time transformations (`use utc-datetime::constants::*;`)
 - Nanosecond resolution.
-- #![no_std] support.
+- `#![no_std]` support.
 
 ## Examples (exhaustive)
  ```Rust
