@@ -8,10 +8,10 @@
 //! [dependencies]
 //! utc-dt = "0.1"
 //! ```
-//! For extended/niche features and local timezone support see [chrono](https://github.com/chronotope/chrono) or [time](https://github.com/time-rs/time).
+//! For extended/niche features and local timezone support see [`chrono`](https://github.com/chronotope/chrono) or [`time`](https://github.com/time-rs/time).
 //!
 //! ## NOTE
-//! Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:00:00`. This library takes advantage of this assumption to simplify the API and internal logic.
+//! Only capable of expressing times and dates SINCE the Unix Epoch `(1970-01-01T00:00:00Z)`. This library takes advantage of this assumption to simplify the API and internal logic.
 //!
 //! ## Features
 //! - Create UTC timestamps and datetimes from `Duration`s, or directly from unsigned UTC sub-second measurements, or from the system time.
@@ -20,14 +20,15 @@
 //! - Determine the weekday.
 //! - Determine the number of days since the Unix Epoch.
 //! - Obtain information on a date or time, such as if it occurs within a leap year, or the number of days in the month.
-//! - Format dates according to ISO 8601 (`YYYY-MM-DD`)
-//! - Format datetimes according to ISO 8601 (`YYYY-MM-DDThh:mm:ssZ`)
-//! - Provides constants useful for time transformations (`use utc-dt::constants::*;`)
+//! - Format dates according to ISO 8601 `(YYYY-MM-DD)`
+//! - Format datetimes according to ISO 8601 `(YYYY-MM-DDThh:mm:ssZ)`
+//! - Provides constants useful for time transformations: [`utc-dt::constants`](https://docs.rs/utc-dt/latest/utc_dt/constants/index.html)
 //! - Nanosecond resolution.
 //! - `#![no_std]` support.
 //!
 //! ## Example (exhaustive)
-//! ```Rust
+#![cfg_attr(not(feature = "std"), doc = "```rust,ignore")]
+#![cfg_attr(feature = "std", doc = "```rust")]
 //!     use core::time::Duration;
 //!
 //!     use utc_dt::UTCDatetime;
@@ -44,6 +45,7 @@
 //!     // UTC Timestamp from a duration
 //!     let utc_timestamp = UTCTimestamp::from(example_duration);
 //!     // UTC timestamp from the local system time.
+//!     // Not available for #![no_std]
 //!     let utc_timestamp = UTCTimestamp::try_from_system_time().unwrap();
 //!     // UTC Timestamp from a u64 measurement directly.
 //!     let utc_timestamp = UTCTimestamp::from_millis(1686824288903);
@@ -70,12 +72,10 @@
 //!     let (year, month, day) = utc_date.to_components();
 //!     // UTC Day from UTC Date
 //!     let utc_day = utc_date.to_utc_day();
-#![cfg_attr(feature = "no_std", doc = "```ignore")]
-//!     // Get date string formatted according to ISO 8601 (`YYYY-MM-DD`)
+//!     // Get date string formatted according to ISO 8601 `(YYYY-MM-DD)`
 //!     // Not available with `no_std`
 //!     let iso_date = utc_date.to_iso_date();
 //!     assert_eq!(iso_date, "2023-06-15");
-
 //!
 //!     // UTC Datetime directly from raw components
 //!     let utc_datetime = UTCDatetime::try_from_raw_components(
@@ -93,12 +93,10 @@
 //!     let (hours, minutes, seconds) = utc_datetime.to_hours_minutes_seconds();
 //!     // Get the sub-second component of the time of day, in nanoseconds
 //!     let subsec_ns = utc_datetime.to_subsec_ns();
-#![cfg_attr(feature = "no_std", doc = "```ignore")]
-//!     // Get UTC datetime string formatted according to ISO 8601 (`YYYY-MM-DDThh:mm:ssZ`)
+//!     // Get UTC datetime string formatted according to ISO 8601 `(YYYY-MM-DDThh:mm:ssZ)`
 //!     // Not available with `no_std`
 //!     let iso_datetime = utc_datetime.to_iso_datetime();
 //!     assert_eq!(iso_datetime, "2023-06-15T10:18:08Z");
-
 //!
 //!     {
 //!         // `UTCTransformations` can be used to create shortcuts to the desired type!
@@ -122,6 +120,7 @@
 //!         let utc_datetime = UTCDatetime::from(utc_timestamp);
 //!
 //!         // UTC Day / UTC Date / UTC Datetime from local system time
+//!         // Not available for #![no_std]
 //!         let utc_day = UTCDay::try_from_system_time().unwrap();
 //!         let utc_date = UTCDate::try_from_system_time().unwrap();
 //!         let utc_datetime = UTCDatetime::try_from_system_time().unwrap();
