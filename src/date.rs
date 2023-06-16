@@ -4,6 +4,8 @@
 //! proplectic Gregorian Calendar (the *civil* calendar),
 //! to create UTC dates.
 
+use std::time::Duration;
+
 use anyhow::{
     Result,
     anyhow
@@ -21,13 +23,6 @@ pub struct UTCDate {
     year: u32,
     month: u8,
     day: u8
-}
-
-impl UTCTransformations for UTCDate {
-    fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self {
-        let utc_day = UTCDay::from_utc_timestamp(timestamp);
-        Self::from_utc_day(utc_day)
-    }
 }
 
 impl UTCDate {
@@ -55,8 +50,8 @@ impl UTCDate {
     /// http://howardhinnant.github.io/date_algorithms.html#civil_from_days
     ///
     /// Simplified for unsigned days/years
-    pub fn from_utc_day(days: UTCDay) -> Self {
-        let z = u32::from(days) + 719468;
+    pub fn from_utc_day(utc_day: UTCDay) -> Self {
+        let z = u32::from(utc_day) + 719468;
         let era = z / 146097;
         let doe = z - (era * 146097);
         let yoe = (doe - (doe / 1460) + (doe / 36524) - (doe / 146096)) / 365;
@@ -86,6 +81,20 @@ impl UTCDate {
         let doe = (yoe * 365) + (yoe / 4) - (yoe / 100) + doy;
         let days = (era * 146097) + doe - 719468;
         days.into()
+    }
+
+    /// Get copy of the date components as integers
+    ///
+    /// Returns tuple: `(year: u32, month: u8, day: u8)`
+    pub fn to_components(&self) -> (u32, u8, u8) {
+        (self.year, self.month, self.day)
+    }
+
+    /// Consume self into date components as integers
+    ///
+    /// Returns tuple: `(year: u32, month: u8, day: u8)`
+    pub fn as_components(self) -> (u32, u8, u8) {
+        (self.year, self.month, self.day)
     }
 
     /// Return day component of date
@@ -133,9 +142,28 @@ impl UTCDate {
     }
 }
 
+impl UTCTransformations for UTCDate {
+    fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self {
+        let utc_day = UTCDay::from_utc_timestamp(timestamp);
+        Self::from_utc_day(utc_day)
+    }
+}
+
+impl From<Duration> for UTCDate {
+    fn from(duration: Duration) -> Self {
+        Self::from_utc_duration(duration)
+    }
+}
+
 impl From<UTCTimestamp> for UTCDate {
     fn from(timestamp: UTCTimestamp) -> Self {
         Self::from_utc_timestamp(timestamp)
+    }
+}
+
+impl From<UTCDay> for UTCDate {
+    fn from(utc_day: UTCDay) -> Self {
+        Self::from_utc_day(utc_day)
     }
 }
 
