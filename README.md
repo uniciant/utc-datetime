@@ -5,7 +5,7 @@ UTC Datetime aims to be a user friendly date and time alternative, focused on co
 It prioritizes being space-optimal and efficient.
 
 ```toml
-[dependancies]
+[dependencies]
 utc-dt = "0.1"
 ```
 For extended/niche features and local timezone support see [chrono](https://github.com/chronotope/chrono) or [time](https://github.com/time-rs/time).
@@ -75,23 +75,23 @@ Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:0
     assert_eq!(iso_date, "2023-06-15");
 
     // UTC Datetime directly from raw components
-    let utc_dt = UTCDatetime::try_from_raw_components(
+    let utc_datetime = UTCDatetime::try_from_raw_components(
         year,
         month,
         day,
         time_of_day_ns
     ).unwrap();
     // UTC Datetime from date and time-of-day components
-    let utc_dt = UTCDatetime::try_from_components(utc_date, time_of_day_ns).unwrap();
+    let utc_datetime = UTCDatetime::try_from_components(utc_date, time_of_day_ns).unwrap();
     // Get date and time-of-day components
-    let (utc_date, time_of_day_ns) = (utc_dt.to_date(), utc_dt.to_time_of_day_ns());
-    let (utc_date, time_of_day_ns) = utc_dt.to_components();
+    let (utc_date, time_of_day_ns) = (utc_datetime.to_date(), utc_datetime.to_time_of_day_ns());
+    let (utc_date, time_of_day_ns) = utc_datetime.to_components();
     // Get the time in hours, minutes and seconds
-    let (hours, minutes, seconds) = utc_dt.to_hours_minutes_seconds();
+    let (hours, minutes, seconds) = utc_datetime.to_hours_minutes_seconds();
     // Get the sub-second component of the time of day, in nanoseconds
-    let subsec_ns = utc_dt.to_subsec_ns();
+    let subsec_ns = utc_datetime.to_subsec_ns();
     // Get UTC datetime string formatted according to ISO 8601 (`YYYY-MM-DDThh:mm:ssZ`)
-    let iso_datetime = utc_dt.to_iso_datetime();
+    let iso_datetime = utc_datetime.to_iso_datetime();
     assert_eq!(iso_datetime, "2023-06-15T10:18:08Z");
 
     {
@@ -104,26 +104,26 @@ Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:0
         let utc_day = UTCDay::from(example_duration);
         let utc_date = UTCDate::from_utc_duration(example_duration); // OR
         let utc_date = UTCDate::from(example_duration);
-        let utc_dt = UTCDatetime::from_utc_duration(example_duration); // OR
-        let utc_dt = UTCDatetime::from(example_duration);
+        let utc_datetime = UTCDatetime::from_utc_duration(example_duration); // OR
+        let utc_datetime = UTCDatetime::from(example_duration);
 
         // UTC Day / UTC Date / UTC Datetime from a timestamp
         let utc_day = UTCDay::from_utc_timestamp(utc_timestamp); // OR
         let utc_day = UTCDay::from(utc_timestamp);
         let utc_date = UTCDate::from_utc_timestamp(utc_timestamp); // OR
         let utc_date = UTCDate::from(utc_timestamp);
-        let utc_dt = UTCDatetime::from_utc_timestamp(utc_timestamp); // OR
-        let utc_dt = UTCDatetime::from(utc_timestamp);
+        let utc_datetime = UTCDatetime::from_utc_timestamp(utc_timestamp); // OR
+        let utc_datetime = UTCDatetime::from(utc_timestamp);
 
         // UTC Day / UTC Date / UTC Datetime from local system time
         let utc_day = UTCDay::try_from_system_time().unwrap();
         let utc_date = UTCDate::try_from_system_time().unwrap();
-        let utc_dt = UTCDatetime::try_from_system_time().unwrap();
+        let utc_datetime = UTCDatetime::try_from_system_time().unwrap();
 
         // UTC Day / UTC Date / UTC Datetime from u64 epoch measurements
         let utc_day = UTCDay::from_utc_secs(1_686_824_288);
         let utc_date = UTCDate::from_utc_millis(1_686_824_288_000);
-        let utc_dt = UTCDate::from_utc_micros(1_686_824_288_000_000);
+        let utc_datetime = UTCDate::from_utc_micros(1_686_824_288_000_000);
     }
 ```
 
