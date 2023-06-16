@@ -2,7 +2,10 @@
 //!
 //! Implements core time concepts via UTC Timestamps and UTC Days.
 
-use std::time::{Duration, SystemTime};
+use core::time::Duration;
+
+#[cfg(feature = "std")]
+use std::time::SystemTime;
 
 use anyhow::{anyhow, Result};
 use derive_more::{Add, Div, From, Into, Mul, Sub};
@@ -33,6 +36,7 @@ impl UTCTimestamp {
     }
 
     /// Try to create a UTC Timestamp from the local system time.
+    #[cfg(feature = "std")]
     pub fn try_from_system_time() -> Result<Self> {
         let duration = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
         Ok(duration.into())
@@ -80,6 +84,7 @@ where
         Self::from_utc_timestamp(timestamp)
     }
     /// Create from local system time
+    #[cfg(feature = "std")]
     fn try_from_system_time() -> Result<Self> {
         let timestamp = UTCTimestamp::try_from_system_time()?;
         Ok(Self::from_utc_timestamp(timestamp))
@@ -161,34 +166,34 @@ impl From<UTCTimestamp> for UTCDay {
 #[cfg(test)]
 mod test {
     use anyhow::Result;
-    use std::time::Duration;
+    use core::time::Duration;
 
     use crate::time::{UTCDay, UTCTimestamp, UTCTransformations, SECONDS_PER_DAY};
 
     #[test]
     fn test_from_days_and_nanos() -> Result<()> {
         let test_cases = [
-            (UTCTimestamp(Duration::from_nanos(0)), UTCDay(0), 0, 4),
+            (UTCTimestamp::from_nanos(0), UTCDay(0), 0, 4),
             (
-                UTCTimestamp(Duration::from_nanos(123456789)),
+                UTCTimestamp::from_nanos(123456789),
                 UTCDay(0),
                 123456789,
                 4,
             ),
             (
-                UTCTimestamp(Duration::from_millis(1686756677000)),
+                UTCTimestamp::from_millis(1686756677000),
                 UTCDay(19522),
                 55_877_000_000_000,
                 3,
             ),
             (
-                UTCTimestamp(Duration::from_millis(1709220677000)),
+                UTCTimestamp::from_millis(1709220677000),
                 UTCDay(19782),
                 55_877_000_000_000,
                 4,
             ),
             (
-                UTCTimestamp(Duration::from_millis(1677684677000)),
+                UTCTimestamp::from_millis(1677684677000),
                 UTCDay(19417),
                 55_877_000_000_000,
                 3,

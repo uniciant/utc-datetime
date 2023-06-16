@@ -4,7 +4,7 @@
 //! proleptic Gregorian Calendar (the *civil* calendar),
 //! to create UTC dates.
 
-use std::time::Duration;
+use core::time::Duration;
 
 use anyhow::{anyhow, Result};
 
@@ -132,6 +132,7 @@ impl UTCDate {
     ///
     /// Conforms to ISO 8601:
     /// https://www.w3.org/TR/NOTE-datetime
+    #[cfg(feature = "std")]
     pub fn to_iso_date(&self) -> String {
         format!("{:04}-{:02}-{:02}", self.year, self.month, self.day)
     }

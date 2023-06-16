@@ -1,5 +1,10 @@
 //! # UTC Datetime
-//! Simple, fast and small UTC dates, timestamps and datetimes library for Rust
+//! Simple, fast and small UTC date, timestamp and datetime library for Rust.
+//!
+//! UTC Datetime aims to be a user friendly date and time alternative, focused on core features.
+//! It prioritizes being space-optimal and efficient.
+//!
+//! For extended/niche features and local timezone support see [chrono](https://github.com/chronotope/chrono) or [time](https://github.com/time-rs/time).
 //!
 //! ## NOTE
 //! Only capable of expressing times and dates SINCE the Unix Epoch `1970/01/01 00:00:00`. This library takes advantage of this assumption to simplify the API and internal logic.
@@ -14,11 +19,12 @@
 //! - Format dates according to ISO 8601 (`YYYY-MM-DD`)
 //! - Format datetimes according to ISO 8601 (`YYYY-MM-DDThh:mm:ssZ`)
 //! - Provides constants useful for time transformations (`use utc-datetime::constants::*;`)
-//! - Nanosecond resolution
+//! - Nanosecond resolution.
+//! - `no_std` support. Enable by importing with `features = ["no_std"]`
 //!
 //! ## Example (exhaustive)
 //! ```Rust
-//!     use std::time::Duration;
+//!     use core::time::Duration;
 //!
 //!     use utc_datetime::UTCDatetime;
 //!     use utc_datetime::time::{
@@ -60,9 +66,12 @@
 //!     let (year, month, day) = utc_date.to_components();
 //!     // UTC Day from UTC Date
 //!     let utc_day = utc_date.to_utc_day();
+#![cfg_attr(feature = "no_std", doc = "```ignore")]
 //!     // Get date string formatted according to ISO 8601 (`YYYY-MM-DD`)
+//!     // Not available with `no_std`
 //!     let iso_date = utc_date.to_iso_date();
 //!     assert_eq!(iso_date, "2023-06-15");
+
 //!
 //!     // UTC Datetime directly from raw components
 //!     let utc_datetime = UTCDatetime::try_from_raw_components(
@@ -80,9 +89,12 @@
 //!     let (hours, minutes, seconds) = utc_datetime.to_hours_minutes_seconds();
 //!     // Get the sub-second component of the time of day, in nanoseconds
 //!     let subsec_ns = utc_datetime.to_subsec_ns();
+#![cfg_attr(feature = "no_std", doc = "```ignore")]
 //!     // Get UTC datetime string formatted according to ISO 8601 (`YYYY-MM-DDThh:mm:ssZ`)
+//!     // Not available with `no_std`
 //!     let iso_datetime = utc_datetime.to_iso_datetime();
 //!     assert_eq!(iso_datetime, "2023-06-15T10:18:08Z");
+
 //!
 //!     {
 //!         // `UTCTransformations` can be used to create shortcuts to the desired type!
@@ -130,13 +142,14 @@
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![warn(dead_code)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod date;
 pub mod time;
 #[rustfmt::skip]
 pub mod constants;
 
-use std::time::Duration;
+use core::time::Duration;
 
 use anyhow::{anyhow, Result};
 
@@ -229,6 +242,7 @@ impl UTCDatetime {
     ///
     /// Conforms to ISO 8601:
     /// https://www.w3.org/TR/NOTE-datetime
+    #[cfg(feature = "std")]
     pub fn to_iso_datetime(&self) -> String {
         let date = self.date.to_iso_date();
         let (hours, minutes, seconds) = self.to_hours_minutes_seconds();
@@ -260,16 +274,27 @@ impl From<Duration> for UTCDatetime {
 mod test {
     use anyhow::Result;
 
-    use crate::{time::UTCTransformations, UTCDatetime};
-
-    #[test]
-    fn test_datetime_from_timestamp() -> Result<()> {
-        let _ = UTCDatetime::try_from_system_time()?;
-        Ok(())
-    }
+    use crate::UTCDatetime;
 
     #[test]
     fn test_datetime_from_raw_components() -> Result<()> {
+        let test_cases = [
+            (1970, 1, 1, 0, 0, 0), // thu, 00:00:00.000
+            (2023, 6, 14, 33_609_648_000_000, 19522, 648_000_000), // wed, 09:20:09.648
+        ];
+
+        for (year, month, day, time_of_day_ns, expected_utc_day, expected_subsec_ns) in test_cases {
+            let datetime = UTCDatetime::try_from_raw_components(year, month, day, time_of_day_ns)?;
+            assert_eq!(datetime.to_date().to_utc_day(), expected_utc_day.into());
+            assert_eq!(datetime.to_subsec_ns(), expected_subsec_ns);
+        }
+
+        Ok(())
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_datetime_to_iso_time() -> Result<()> {
         let test_cases = [
             (1970, 1, 1, 0, "1970-01-01T00:00:00Z"), // thu, 00:00:00.000
             (2023, 6, 14, 33_609_648_000_000, "2023-06-14T09:20:09Z"), // wed, 09:20:09.648
