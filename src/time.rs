@@ -49,12 +49,12 @@ impl UTCTimestamp {
     }
 
     /// UTC Timestamp as a Duration since the Unix Epoch.
-    pub fn as_duration(&self) -> Duration {
+    pub fn as_utc_duration(&self) -> Duration {
         self.0
     }
 
     /// Consume UTC Timestamp into a Duration since the Unix Epoch.
-    pub fn to_duration(self) -> Duration {
+    pub fn to_utc_duration(self) -> Duration {
         self.0
     }
 
