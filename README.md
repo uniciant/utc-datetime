@@ -52,6 +52,8 @@ See [docs.rs](https://docs.rs/utc-dt) for the API reference.
     let time_of_day_ns: u64 = utc_timestamp.as_time_of_day_ns();
     // Use UTC Timestamp to get days since epoch (ie. UTC Day)
     let utc_day: UTCDay = utc_timestamp.as_utc_day();
+    // Convert UTC Timestamp to a Duration to get millis since epoch.
+    let utc_millis = utc_timestamp.as_utc_duration().as_millis();
 
     // UTC Day from an integer
     let utc_day = UTCDay::from(19523);
