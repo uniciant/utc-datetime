@@ -203,31 +203,31 @@ impl UTCDatetime {
     /// Get copy of the internal date and time-of-day components
     ///
     /// Returns tuple: `(date: UTCDate, time_of_day_ns: u64)`
-    pub fn to_components(&self) -> (UTCDate, u64) {
+    pub fn as_components(&self) -> (UTCDate, u64) {
         (self.date, self.time_of_day_ns)
     }
 
     /// Consume self into the internal date and time-of-day components
     ///
     /// Returns tuple: `(date: UTCDate, time_of_day_ns: u64)`
-    pub fn as_components(self) -> (UTCDate, u64) {
+    pub fn to_components(self) -> (UTCDate, u64) {
         (self.date, self.time_of_day_ns)
     }
 
     /// Get the internal date component.
-    pub fn to_date(&self) -> UTCDate {
+    pub fn as_date(&self) -> UTCDate {
         self.date
     }
 
     /// Get the internal time-of-day component.
-    pub fn to_time_of_day_ns(&self) -> u64 {
+    pub fn as_time_of_day_ns(&self) -> u64 {
         self.time_of_day_ns
     }
 
     /// Get the time-of-day expressed as hours minutes and seconds.
     ///
     /// Returns tuple `(hours: u8, minutes: u8, seconds: u8)`
-    pub fn to_hours_minutes_seconds(&self) -> (u8, u8, u8) {
+    pub fn as_hours_minutes_seconds(&self) -> (u8, u8, u8) {
         let hours = (self.time_of_day_ns / NANOS_PER_HOUR) as u8;
         let minutes = ((self.time_of_day_ns % NANOS_PER_HOUR) / NANOS_PER_MINUTE) as u8;
         let seconds = ((self.time_of_day_ns % NANOS_PER_MINUTE) / NANOS_PER_SECOND) as u8;
@@ -236,7 +236,7 @@ impl UTCDatetime {
 
     /// Get the sub-second component of the time-of-day
     /// expressed in nanoseconds.
-    pub fn to_subsec_ns(&self) -> u32 {
+    pub fn as_subsec_ns(&self) -> u32 {
         (self.time_of_day_ns % NANOS_PER_SECOND) as u32
     }
 
@@ -246,18 +246,24 @@ impl UTCDatetime {
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
     #[cfg(feature = "std")]
-    pub fn to_iso_datetime(&self) -> String {
-        let date = self.date.to_iso_date();
-        let (hours, minutes, seconds) = self.to_hours_minutes_seconds();
+    pub fn as_iso_datetime(&self) -> String {
+        let date = self.date.as_iso_date();
+        let (hours, minutes, seconds) = self.as_hours_minutes_seconds();
         format!("{date}T{:02}:{:02}:{:02}Z", hours, minutes, seconds)
     }
 }
 
 impl UTCTransformations for UTCDatetime {
     fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self {
-        let tod_ns = timestamp.to_time_of_day_ns();
+        let tod_ns = timestamp.as_time_of_day_ns();
         let date = UTCDate::from_utc_timestamp(timestamp);
         Self::from_components(date, tod_ns)
+    }
+
+    fn as_utc_timestamp(&self) -> UTCTimestamp {
+        let (date, tod_ns) = self.as_components();
+        let day = date.as_utc_day();
+        UTCTimestamp::try_from_day_and_nanos(day, tod_ns).unwrap()
     }
 }
 
@@ -288,8 +294,8 @@ mod test {
 
         for (year, month, day, time_of_day_ns, expected_utc_day, expected_subsec_ns) in test_cases {
             let datetime = UTCDatetime::try_from_raw_components(year, month, day, time_of_day_ns)?;
-            assert_eq!(datetime.to_date().to_utc_day(), expected_utc_day.into());
-            assert_eq!(datetime.to_subsec_ns(), expected_subsec_ns);
+            assert_eq!(datetime.as_date().as_utc_day(), expected_utc_day.into());
+            assert_eq!(datetime.as_subsec_ns(), expected_subsec_ns);
         }
 
         Ok(())
@@ -305,7 +311,7 @@ mod test {
 
         for (year, month, day, time_of_day_ns, expected_iso_datetime) in test_cases {
             let datetime = UTCDatetime::try_from_raw_components(year, month, day, time_of_day_ns)?;
-            assert_eq!(datetime.to_iso_datetime(), expected_iso_datetime);
+            assert_eq!(datetime.as_iso_datetime(), expected_iso_datetime);
         }
 
         Ok(())

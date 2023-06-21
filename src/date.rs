@@ -66,7 +66,7 @@ impl UTCDate {
     /// <http://howardhinnant.github.io/date_algorithms.html#days_from_civil>
     ///
     /// Simplified for unsigned days/years
-    pub fn to_utc_day(&self) -> UTCDay {
+    pub fn as_utc_day(&self) -> UTCDay {
         let m = self.month as u32;
         let d = self.day as u32;
         let y = self.year - ((m <= 2) as u32);
@@ -81,29 +81,29 @@ impl UTCDate {
     /// Get copy of the date components as integers
     ///
     /// Returns tuple: `(year: u32, month: u8, day: u8)`
-    pub fn to_components(&self) -> (u32, u8, u8) {
+    pub fn as_components(&self) -> (u32, u8, u8) {
         (self.year, self.month, self.day)
     }
 
     /// Consume self into date components as integers
     ///
     /// Returns tuple: `(year: u32, month: u8, day: u8)`
-    pub fn as_components(self) -> (u32, u8, u8) {
+    pub fn to_components(self) -> (u32, u8, u8) {
         (self.year, self.month, self.day)
     }
 
     /// Return day component of date
-    pub fn day(&self) -> u8 {
+    pub fn as_day(&self) -> u8 {
         self.day
     }
 
     /// Return month component of date
-    pub fn month(&self) -> u8 {
+    pub fn as_month(&self) -> u8 {
         self.month
     }
 
     /// Return year component of date
-    pub fn year(&self) -> u32 {
+    pub fn as_year(&self) -> u32 {
         self.year
     }
 
@@ -138,7 +138,7 @@ impl UTCDate {
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
     #[cfg(feature = "std")]
-    pub fn to_iso_date(&self) -> String {
+    pub fn as_iso_date(&self) -> String {
         format!("{:04}-{:02}-{:02}", self.year, self.month, self.day)
     }
 }
@@ -147,6 +147,10 @@ impl UTCTransformations for UTCDate {
     fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self {
         let utc_day = UTCDay::from_utc_timestamp(timestamp);
         Self::from_utc_day(utc_day)
+    }
+
+    fn as_utc_timestamp(&self) -> UTCTimestamp {
+        self.as_utc_day().as_utc_timestamp()
     }
 }
 
@@ -241,7 +245,7 @@ mod test {
 
         for (expected, year, month, day) in test_cases {
             let date = UTCDate { year, month, day };
-            let utc_day = date.to_utc_day();
+            let utc_day = date.as_utc_day();
             assert_eq!(utc_day, expected);
         }
 
