@@ -181,6 +181,38 @@ impl UTCDay {
 }
 
 impl UTCTransformations for UTCDay {
+    fn from_utc_secs(s: u64) -> Self {
+        Self((s / SECONDS_PER_DAY) as u32)
+    }
+
+    fn as_utc_secs(&self) -> u64 {
+        (self.0 as u64) * SECONDS_PER_DAY
+    }
+
+    fn from_utc_millis(ms: u64) -> Self {
+        Self((ms / MILLIS_PER_DAY) as u32)
+    }
+
+    fn as_utc_millis(&self) -> u64 {
+        (self.0 as u64) * MILLIS_PER_DAY
+    }
+
+    fn from_utc_micros(us: u64) -> Self {
+        Self((us / MICROS_PER_DAY) as u32)
+    }
+
+    fn as_utc_micros(&self) -> u64 {
+        (self.0 as u64) * MICROS_PER_DAY
+    }
+
+    fn from_utc_nanos(ns: u64) -> Self {
+        Self((ns / NANOS_PER_DAY) as u32)
+    }
+
+    fn as_utc_nanos(&self) -> u64 {
+        (self.0 as u64) * NANOS_PER_DAY
+    }
+
     fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self {
         timestamp.as_utc_day()
     }

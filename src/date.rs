@@ -144,6 +144,42 @@ impl UTCDate {
 }
 
 impl UTCTransformations for UTCDate {
+    fn from_utc_secs(s: u64) -> Self {
+        let utc_day = UTCDay::from_utc_secs(s);
+        Self::from_utc_day(utc_day)
+    }
+
+    fn as_utc_secs(&self) -> u64 {
+        self.as_utc_day().as_utc_secs()
+    }
+
+    fn from_utc_millis(s: u64) -> Self {
+        let utc_day = UTCDay::from_utc_millis(s);
+        Self::from_utc_day(utc_day)
+    }
+
+    fn as_utc_millis(&self) -> u64 {
+        self.as_utc_day().as_utc_millis()
+    }
+
+    fn from_utc_micros(s: u64) -> Self {
+        let utc_day = UTCDay::from_utc_micros(s);
+        Self::from_utc_day(utc_day)
+    }
+
+    fn as_utc_micros(&self) -> u64 {
+        self.as_utc_day().as_utc_micros()
+    }
+
+    fn from_utc_nanos(s: u64) -> Self {
+        let utc_day = UTCDay::from_utc_nanos(s);
+        Self::from_utc_day(utc_day)
+    }
+
+    fn as_utc_nanos(&self) -> u64 {
+        self.as_utc_day().as_utc_nanos()
+    }
+
     fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self {
         let utc_day = UTCDay::from_utc_timestamp(timestamp);
         Self::from_utc_day(utc_day)
