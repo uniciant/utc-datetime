@@ -326,28 +326,28 @@ mod test {
     #[test]
     fn test_from_days_and_nanos() -> Result<()> {
         let test_cases = [
-            (Duration::from_nanos(0), UTCDay(0), 0, 4),
-            (Duration::from_nanos(123456789), UTCDay(0), 123456789, 4),
+            (UTCTimestamp::from_utc_nanos(0), UTCDay(0), 0, 4),
+            (UTCTimestamp::from_utc_nanos(123456789), UTCDay(0), 123456789, 4),
             (
-                Duration::from_millis(1686756677000),
+                UTCTimestamp::from_utc_millis(1686756677000),
                 UTCDay(19522),
                 55_877_000_000_000,
                 3,
             ),
             (
-                Duration::from_millis(1709220677000),
+                UTCTimestamp::from_utc_millis(1709220677000),
                 UTCDay(19782),
                 55_877_000_000_000,
                 4,
             ),
             (
-                Duration::from_millis(1677684677000),
+                UTCTimestamp::from_utc_millis(1677684677000),
                 UTCDay(19417),
                 55_877_000_000_000,
                 3,
             ),
             (
-                Duration::new(u32::MAX as u64 * SECONDS_PER_DAY, 0),
+                Duration::new(u32::MAX as u64 * SECONDS_PER_DAY, 0).into(),
                 UTCDay(u32::MAX),
                 0,
                 0,
@@ -356,7 +356,7 @@ mod test {
 
         for (expected_timestamp, utc_days, time_of_day_ns, weekday) in test_cases {
             let timestamp = UTCTimestamp::try_from_day_and_nanos(utc_days, time_of_day_ns)?;
-            assert_eq!(timestamp, expected_timestamp.into());
+            assert_eq!(timestamp, expected_timestamp);
             assert_eq!(UTCDay::from_utc_timestamp(timestamp), utc_days);
             assert_eq!(timestamp.as_time_of_day_ns(), time_of_day_ns);
             assert_eq!(utc_days.as_utc_weekday(), weekday);
