@@ -33,7 +33,7 @@ impl UTCTimestamp {
 
     /// Unchecked method to create a UTC Timestamp from UTC day and time-of-day components
     #[inline]
-    pub unsafe fn from_days_and_nanos(day: UTCDay, time_of_day_ns: u64) -> Self {
+    pub const unsafe fn from_days_and_nanos(day: UTCDay, time_of_day_ns: u64) -> Self {
         Self::_from_day_and_nanos(day, time_of_day_ns)
     }
 
@@ -55,13 +55,21 @@ impl UTCTimestamp {
         Ok(UTCTimestamp(duration))
     }
 
-    /// UTC Timestamp as a Duration since the Unix Epoch.
+    /// Create UTC Timestamp from a duration.
+    /// Constant evaluation alternative to `From<Duration>`.
+    #[inline]
+    pub const fn from_utc_duration(d: Duration) -> Self {
+        Self(d)
+    }
+
+    /// UTC Timestamp as internal Duration since the Unix Epoch.
     #[inline]
     pub const fn as_utc_duration(&self) -> Duration {
         self.0
     }
 
-    /// Consume UTC Timestamp into a Duration since the Unix Epoch.
+    /// Consume UTC Timestamp into the internal Duration since the Unix Epoch.
+    /// Constant evaluation alternative to `Into<Duration>`.
     #[inline]
     pub const fn to_utc_duration(self) -> Duration {
         self.0
@@ -240,6 +248,26 @@ where
 pub struct UTCDay(u32);
 
 impl UTCDay {
+    /// Create UTC Day from integer.
+    /// Const evaluation alternative to `From<u32>`
+    #[inline]
+    pub const fn from_u32(u: u32) -> Self {
+        Self(u)
+    }
+
+    /// UTC Day as internal integer
+    #[inline]
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+
+    /// Consume UTC Day to internal integer
+    /// Const evaluation alternative to `Into<u32>`
+    #[inline]
+    pub const fn to_u32(self) -> u32 {
+        self.0
+    }
+
     /// Calculate and return the day of the week in numerical form
     /// `[0, 6]` represents `[Sun, Sat]`
     ///
@@ -347,7 +375,7 @@ mod test {
                 3,
             ),
             (
-                Duration::new(u32::MAX as u64 * SECONDS_PER_DAY, 0).into(),
+                UTCTimestamp::from_utc_duration(Duration::new(u32::MAX as u64 * SECONDS_PER_DAY, 0)),
                 UTCDay(u32::MAX),
                 0,
                 0,
