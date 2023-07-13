@@ -41,7 +41,7 @@ impl UTCDate {
         if date.month == 0 || date.month > 12 {
             return Err(anyhow!("Month out of range! (month: {:02})", month));
         }
-        if date.day == 0 || date.day > date.days_in_month()? {
+        if date.day == 0 || date.day > date.days_in_month() {
             return Err(anyhow!(
                 "Day out of range! (day: {:02}) (yyyy-mm: {:04}-{:02})",
                 day,
@@ -134,18 +134,18 @@ impl UTCDate {
 
     /// Returns the number of days within the month of the date.
     /// Leap years are accounted for.
-    pub fn days_in_month(&self) -> Result<u8> {
+    pub fn days_in_month(&self) -> u8 {
         match self.month {
-            1 | 3 | 5 | 7 | 8 | 10 | 12 => Ok(31),
-            4 | 6 | 9 | 11 => Ok(30),
+            1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+            4 | 6 | 9 | 11 => 30,
             2 => {
                 if self.is_leap_year() {
-                    Ok(29)
+                    29
                 } else {
-                    Ok(28)
+                    28
                 }
             }
-            _ => Err(anyhow!("Month out of range! {:2}", self.month)),
+            _ => panic!("Month out of range! {:2}", self.month),
         }
     }
 
