@@ -25,20 +25,16 @@ impl UTCTimestamp {
         Self(Duration::from_secs(secs))
     }
 
-    const fn _from_days_and_nanos(day: UTCDay, time_of_day_ns: u64) -> Self {
-        let secs = (day.0 as u64 * SECONDS_PER_DAY) + (time_of_day_ns / NANOS_PER_SECOND);
-        let nanos = (time_of_day_ns % NANOS_PER_SECOND) as u32;
-        Self(Duration::new(secs, nanos))
-    }
-
     /// Unchecked method to create a UTC Timestamp from UTC day and time-of-day components
     ///
     /// # Safety
     /// Unsafe if the user passes an invalid time-of-day nanoseconds component (exceeding NANOS_PER_DAY).
     /// Invalid inputs are not checked and may cause a panic in other methods.
     #[inline]
-    pub const unsafe fn from_days_and_nanos(day: UTCDay, time_of_day_ns: u64) -> Self {
-        Self::_from_days_and_nanos(day, time_of_day_ns)
+    pub const unsafe fn from_days_and_nanos_unchecked(day: UTCDay, time_of_day_ns: u64) -> Self {
+        let secs = (day.0 as u64 * SECONDS_PER_DAY) + (time_of_day_ns / NANOS_PER_SECOND);
+        let nanos = (time_of_day_ns % NANOS_PER_SECOND) as u32;
+        Self(Duration::new(secs, nanos))
     }
 
     /// Try to create a UTC Timestamp from UTC day and time-of-day components.
@@ -49,7 +45,7 @@ impl UTCTimestamp {
                 time_of_day_ns
             ));
         }
-        Ok(Self::_from_days_and_nanos(day, time_of_day_ns))
+        Ok(unsafe { Self::from_days_and_nanos_unchecked(day, time_of_day_ns) })
     }
 
     /// Try to create a UTC Timestamp from the local system time.

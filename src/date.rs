@@ -20,24 +20,20 @@ pub struct UTCDate {
 }
 
 impl UTCDate {
-    const fn _from_components_unchecked(year: u32, month: u8, day: u8) -> Self {
-        Self { year, month, day }
-    }
-
     /// Unchecked method to create a UTC Date from provided year, month and day.
     ///
     /// # Safety
     /// Unsafe if the user passes an invalid calendar year, month and day combination.
     /// Invalid inputs are not checked and may cause a panic in other methods.
     #[inline]
-    pub const unsafe fn from_components(year: u32, month: u8, day: u8) -> Self {
-        Self::_from_components_unchecked(year, month, day)
+    pub const unsafe fn from_components_unchecked(year: u32, month: u8, day: u8) -> Self {
+        Self { year, month, day }
     }
 
     /// Try to create a UTC Date from provided year, month and day.
     pub fn try_from_components(year: u32, month: u8, day: u8) -> Result<Self> {
         // force create
-        let date = Self::_from_components_unchecked(year, month, day);
+        let date = unsafe { Self::from_components_unchecked(year, month, day) };
         // then check
         if date.year < 1970 {
             return Err(anyhow!("Year out of range! (year: {:04})", year));
