@@ -25,7 +25,7 @@ impl UTCTimestamp {
         Self(Duration::from_secs(secs))
     }
 
-    const fn _from_day_and_nanos(day: UTCDay, time_of_day_ns: u64) -> Self {
+    const fn _from_days_and_nanos(day: UTCDay, time_of_day_ns: u64) -> Self {
         let secs = (day.0 as u64 * SECONDS_PER_DAY) + (time_of_day_ns / NANOS_PER_SECOND);
         let nanos = (time_of_day_ns % NANOS_PER_SECOND) as u32;
         Self(Duration::new(secs, nanos))
@@ -34,18 +34,18 @@ impl UTCTimestamp {
     /// Unchecked method to create a UTC Timestamp from UTC day and time-of-day components
     #[inline]
     pub const unsafe fn from_days_and_nanos(day: UTCDay, time_of_day_ns: u64) -> Self {
-        Self::_from_day_and_nanos(day, time_of_day_ns)
+        Self::_from_days_and_nanos(day, time_of_day_ns)
     }
 
     /// Try to create a UTC Timestamp from UTC day and time-of-day components.
-    pub fn try_from_day_and_nanos(day: UTCDay, time_of_day_ns: u64) -> Result<Self> {
+    pub fn try_from_days_and_nanos(day: UTCDay, time_of_day_ns: u64) -> Result<Self> {
         if time_of_day_ns >= NANOS_PER_DAY {
             return Err(anyhow!(
                 "Nanoseconds not within a day! (time_of_day_ns: {})",
                 time_of_day_ns
             ));
         }
-        Ok(Self::_from_day_and_nanos(day, time_of_day_ns))
+        Ok(Self::_from_days_and_nanos(day, time_of_day_ns))
     }
 
     /// Try to create a UTC Timestamp from the local system time.
@@ -383,7 +383,7 @@ mod test {
         ];
 
         for (expected_timestamp, utc_days, time_of_day_ns, weekday) in test_cases {
-            let timestamp = UTCTimestamp::try_from_day_and_nanos(utc_days, time_of_day_ns)?;
+            let timestamp = UTCTimestamp::try_from_days_and_nanos(utc_days, time_of_day_ns)?;
             assert_eq!(timestamp, expected_timestamp);
             assert_eq!(UTCDay::from_utc_timestamp(timestamp), utc_days);
             assert_eq!(timestamp.as_time_of_day_ns(), time_of_day_ns);
