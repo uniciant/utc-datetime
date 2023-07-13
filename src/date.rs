@@ -20,10 +20,21 @@ pub struct UTCDate {
 }
 
 impl UTCDate {
+    /// Unchecked method to create a UTC Date from provided year, month and day.
+    ///
+    /// # Safety
+    /// Unsafe if the user passes an invalid calendar year, month and day combination.
+    /// Invalid inputs are not checked and may cause a panic in other methods.
+    #[inline]
+    pub const unsafe fn from_components_unchecked(year: u32, month: u8, day: u8) -> Self {
+        Self { year, month, day }
+    }
+
     /// Try to create a UTC Date from provided year, month and day.
     pub fn try_from_components(year: u32, month: u8, day: u8) -> Result<Self> {
         // force create
-        let date = Self { year, month, day };
+        let date = unsafe { Self::from_components_unchecked(year, month, day) };
+        // then check
         if date.year < 1970 {
             return Err(anyhow!("Year out of range! (year: {:04})", year));
         }
@@ -47,8 +58,8 @@ impl UTCDate {
     /// <http://howardhinnant.github.io/date_algorithms.html#civil_from_days>
     ///
     /// Simplified for unsigned days/years
-    pub fn from_utc_day(utc_day: UTCDay) -> Self {
-        let z = u32::from(utc_day) + 719468;
+    pub const fn from_utc_day(utc_day: UTCDay) -> Self {
+        let z = utc_day.as_u32() + 719468;
         let era = z / 146097;
         let doe = z - (era * 146097);
         let yoe = (doe - (doe / 1460) + (doe / 36524) - (doe / 146096)) / 365;
@@ -66,7 +77,7 @@ impl UTCDate {
     /// <http://howardhinnant.github.io/date_algorithms.html#days_from_civil>
     ///
     /// Simplified for unsigned days/years
-    pub fn as_utc_day(&self) -> UTCDay {
+    pub const fn as_utc_day(&self) -> UTCDay {
         let m = self.month as u32;
         let d = self.day as u32;
         let y = self.year - ((m <= 2) as u32);
@@ -75,35 +86,40 @@ impl UTCDate {
         let doy = ((153 * (if m > 2 { m - 3 } else { m + 9 }) + 2) / 5) + d - 1;
         let doe = (yoe * 365) + (yoe / 4) - (yoe / 100) + doy;
         let days = (era * 146097) + doe - 719468;
-        days.into()
+        UTCDay::from_u32(days)
     }
 
     /// Get copy of the date components as integers
     ///
     /// Returns tuple: `(year: u32, month: u8, day: u8)`
-    pub fn as_components(&self) -> (u32, u8, u8) {
+    #[inline]
+    pub const fn as_components(&self) -> (u32, u8, u8) {
         (self.year, self.month, self.day)
     }
 
     /// Consume self into date components as integers
     ///
     /// Returns tuple: `(year: u32, month: u8, day: u8)`
-    pub fn to_components(self) -> (u32, u8, u8) {
+    #[inline]
+    pub const fn to_components(self) -> (u32, u8, u8) {
         (self.year, self.month, self.day)
     }
 
     /// Return day component of date
-    pub fn as_day(&self) -> u8 {
+    #[inline]
+    pub const fn as_day(&self) -> u8 {
         self.day
     }
 
     /// Return month component of date
-    pub fn as_month(&self) -> u8 {
+    #[inline]
+    pub const fn as_month(&self) -> u8 {
         self.month
     }
 
     /// Return year component of date
-    pub fn as_year(&self) -> u32 {
+    #[inline]
+    pub const fn as_year(&self) -> u32 {
         self.year
     }
 
@@ -111,7 +127,8 @@ impl UTCDate {
     ///
     /// Reference:
     /// <http://howardhinnant.github.io/date_algorithms.html#is_leap>
-    pub fn is_leap_year(&self) -> bool {
+    #[inline]
+    pub const fn is_leap_year(&self) -> bool {
         (self.year % 4 == 0) && ((self.year % 100 != 0) || (self.year % 400 == 0))
     }
 
@@ -138,6 +155,7 @@ impl UTCDate {
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
     #[cfg(feature = "std")]
+    #[inline]
     pub fn as_iso_date(&self) -> String {
         format!("{:04}-{:02}-{:02}", self.year, self.month, self.day)
     }
@@ -280,7 +298,7 @@ mod test {
         ];
 
         for (expected, year, month, day) in test_cases {
-            let date = UTCDate { year, month, day };
+            let date = UTCDate::try_from_components(year, month, day)?;
             let utc_day = date.as_utc_day();
             assert_eq!(utc_day, expected);
         }

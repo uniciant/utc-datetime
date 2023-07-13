@@ -1,7 +1,7 @@
 //! # UTC Datetime
 //! Simple, fast and small UTC date, timestamp and datetime library for Rust.
 //!
-//! UTC Datetime aims to be a user friendly date and time alternative, focused on core features.
+//! UTC Datetime aims to be ergonomic and user friendly, focused on core features.
 //! It prioritizes being space-optimal and efficient.
 //!
 //! ```rust,ignore
@@ -10,8 +10,9 @@
 //! ```
 //! For extended/niche features and local time-zone support see [`chrono`](https://github.com/chronotope/chrono) or [`time`](https://github.com/time-rs/time).
 //!
-//! ### NOTE
-//! Only capable of expressing times and dates SINCE the Unix Epoch `(1970-01-01T00:00:00Z)`. This library takes advantage of this assumption to simplify the API and internal logic.
+//! ### NOTE: `unsigned` only!
+//! UTC Datetime will only express times and dates SINCE the Unix Epoch `(1970-01-01T00:00:00Z)`.
+//! The library takes advantage of this assumption to simplify the API and internal logic.
 //!
 //! ## Documentation
 //! See [docs.rs](https://docs.rs/utc-dt) for the API reference.
@@ -26,7 +27,7 @@
 //! - Nanosecond resolution.
 //! - `#![no_std]` support.
 //!
-//! ## Example (exhaustive)
+//! ## Examples (exhaustive)
 #![cfg_attr(not(feature = "std"), doc = "```rust,ignore")]
 #![cfg_attr(feature = "std", doc = "```rust")]
 //!     use core::time::Duration;
@@ -43,26 +44,32 @@
 //!     let example_duration = Duration::from_millis(1686824288903);
 //!
 //!     // UTC Timestamp from a duration
-//!     let utc_timestamp = UTCTimestamp::from(example_duration);
+//!     let utc_timestamp = UTCTimestamp::from(example_duration); // OR
+//!     let utc_timestamp = UTCTimestamp::from_utc_duration(example_duration);
 //!     // UTC timestamp from the local system time.
 //!     // Not available for #![no_std]
 //!     let utc_timestamp = UTCTimestamp::try_from_system_time().unwrap();
-//!     // UTC Timestamp from a u64 measurement directly.
-//!     let utc_timestamp: UTCTimestamp = Duration::from_millis(1686824288903).into();
+//!     // UTC Timestamp from a time measurement (for secs, millis, micros, nanos)
+//!     let utc_timestamp = UTCTimestamp::from_utc_millis(1686824288903);
+//!     // Use UTC Timestamp to get a time measurement since the epoch (for secs, millis, micros, nanos)
+//!     let utc_millis = utc_timestamp.as_utc_millis();
 //!     // Use UTC Timestamp to get time-of-day
 //!     let time_of_day_ns: u64 = utc_timestamp.as_time_of_day_ns();
 //!     // Use UTC Timestamp to get days since epoch (ie. UTC Day)
 //!     let utc_day: UTCDay = utc_timestamp.as_utc_day();
-//!     // Convert UTC Timestamp to a Duration to get millis since epoch.
-//!     let utc_millis = utc_timestamp.as_utc_duration().as_millis();
+//!     // UTC Timestamp from a UTC Day and time-of-day components
+//!     let utc_timestamp = UTCTimestamp::try_from_days_and_nanos(utc_day, time_of_day_ns).unwrap(); // OR
+//!     let utc_timestamp = unsafe { UTCTimestamp::from_days_and_nanos_unchecked(utc_day, time_of_day_ns) };
 //!
 //!     // UTC Day from an integer
-//!     let utc_day = UTCDay::from(19523);
+//!     let utc_day = UTCDay::from(19523); // OR
+//!     let utc_day = UTCDay::from_u32(19523);
 //!     // Use UTC Day to get the weekday
 //!     let weekday = utc_day.as_utc_weekday();
 //!
 //!     // UTC Date directly from components
-//!     let utc_date = UTCDate::try_from_components(2023, 6, 15).unwrap();
+//!     let utc_date = UTCDate::try_from_components(2023, 6, 15).unwrap(); // OR
+//!     let utc_date = unsafe { UTCDate::from_components_unchecked(2023, 6, 15) };
 //!     // UTC Date from UTC Day
 //!     let utc_date = UTCDate::from_utc_day(utc_day);
 //!     // Check whether date occurs within leap year
@@ -75,7 +82,7 @@
 //!     // UTC Day from UTC Date
 //!     let utc_day = utc_date.as_utc_day();
 //!     // Get date string formatted according to ISO 8601 `(YYYY-MM-DD)`
-//!     // Not available with `no_std`
+//!     // Not available for #![no_std]
 //!     let iso_date = utc_date.as_iso_date();
 //!     assert_eq!(iso_date, "2023-06-15");
 //!
@@ -85,9 +92,16 @@
 //!         month,
 //!         day,
 //!         time_of_day_ns
-//!     ).unwrap();
+//!     ).unwrap(); // OR
+//!     let utc_datetime = unsafe { UTCDatetime::from_raw_components_unchecked(
+//!         year,
+//!         month,
+//!         day,
+//!         time_of_day_ns
+//!     )};
 //!     // UTC Datetime from date and time-of-day components
-//!     let utc_datetime = UTCDatetime::try_from_components(utc_date, time_of_day_ns).unwrap();
+//!     let utc_datetime = UTCDatetime::try_from_components(utc_date, time_of_day_ns).unwrap(); // OR
+//!     let utc_datetime = unsafe { UTCDatetime::from_components_unchecked(utc_date, time_of_day_ns) };
 //!     // Get date and time-of-day components
 //!     let (utc_date, time_of_day_ns) = (utc_datetime.as_date(), utc_datetime.as_time_of_day_ns());
 //!     let (utc_date, time_of_day_ns) = utc_datetime.as_components();
@@ -180,7 +194,13 @@ pub struct UTCDatetime {
 }
 
 impl UTCDatetime {
-    fn from_components(date: UTCDate, time_of_day_ns: u64) -> Self {
+    /// Unchecked method to create a datetime frome date and time-of-day components.
+    ///
+    /// # Safety
+    /// Unsafe if the user passes an invalid time-of-day nanoseconds component (exceeding NANOS_PER_DAY).
+    /// Invalid inputs are not checked and may cause a panic in other methods.
+    #[inline]
+    pub const unsafe fn from_components_unchecked(date: UTCDate, time_of_day_ns: u64) -> Self {
         Self {
             date,
             time_of_day_ns,
@@ -195,7 +215,27 @@ impl UTCDatetime {
                 time_of_day_ns
             ));
         }
-        Ok(Self::from_components(date, time_of_day_ns))
+        Ok(unsafe { Self::from_components_unchecked(date, time_of_day_ns) })
+    }
+
+    /// Unchecked method to create datetime from underlying raw components
+    /// Will force create a `UTCDate` internally.
+    ///
+    /// # Safety
+    /// Unsafe if the user passes an invalid year-month-day combination or
+    /// time-of-day nanoseconds component (exceeding NANOS_PER_DAY).
+    /// Invalid inputs are not checked and may cause a panic in other methods.
+    #[inline]
+    pub const unsafe fn from_raw_components_unchecked(
+        year: u32,
+        month: u8,
+        day: u8,
+        time_of_day_ns: u64,
+    ) -> Self {
+        unsafe {
+            let date = UTCDate::from_components_unchecked(year, month, day);
+            Self::from_components_unchecked(date, time_of_day_ns)
+        }
     }
 
     /// Try to create a datetime from underlying raw components.
@@ -213,31 +253,36 @@ impl UTCDatetime {
     /// Get copy of the internal date and time-of-day components
     ///
     /// Returns tuple: `(date: UTCDate, time_of_day_ns: u64)`
-    pub fn as_components(&self) -> (UTCDate, u64) {
+    #[inline]
+    pub const fn as_components(&self) -> (UTCDate, u64) {
         (self.date, self.time_of_day_ns)
     }
 
     /// Consume self into the internal date and time-of-day components
     ///
     /// Returns tuple: `(date: UTCDate, time_of_day_ns: u64)`
-    pub fn to_components(self) -> (UTCDate, u64) {
+    #[inline]
+    pub const fn to_components(self) -> (UTCDate, u64) {
         (self.date, self.time_of_day_ns)
     }
 
     /// Get the internal date component.
-    pub fn as_date(&self) -> UTCDate {
+    #[inline]
+    pub const fn as_date(&self) -> UTCDate {
         self.date
     }
 
     /// Get the internal time-of-day component.
-    pub fn as_time_of_day_ns(&self) -> u64 {
+    #[inline]
+    pub const fn as_time_of_day_ns(&self) -> u64 {
         self.time_of_day_ns
     }
 
     /// Get the time-of-day expressed as hours minutes and seconds.
     ///
     /// Returns tuple `(hours: u8, minutes: u8, seconds: u8)`
-    pub fn as_hours_minutes_seconds(&self) -> (u8, u8, u8) {
+    #[inline]
+    pub const fn as_hours_minutes_seconds(&self) -> (u8, u8, u8) {
         let hours = (self.time_of_day_ns / NANOS_PER_HOUR) as u8;
         let minutes = ((self.time_of_day_ns % NANOS_PER_HOUR) / NANOS_PER_MINUTE) as u8;
         let seconds = ((self.time_of_day_ns % NANOS_PER_MINUTE) / NANOS_PER_SECOND) as u8;
@@ -246,7 +291,8 @@ impl UTCDatetime {
 
     /// Get the sub-second component of the time-of-day
     /// expressed in nanoseconds.
-    pub fn as_subsec_ns(&self) -> u32 {
+    #[inline]
+    pub const fn as_subsec_ns(&self) -> u32 {
         (self.time_of_day_ns % NANOS_PER_SECOND) as u32
     }
 
@@ -267,13 +313,13 @@ impl UTCTransformations for UTCDatetime {
     fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self {
         let tod_ns = timestamp.as_time_of_day_ns();
         let date = UTCDate::from_utc_timestamp(timestamp);
-        Self::from_components(date, tod_ns)
+        unsafe { Self::from_components_unchecked(date, tod_ns) }
     }
 
     fn as_utc_timestamp(&self) -> UTCTimestamp {
         let (date, tod_ns) = self.as_components();
         let day = date.as_utc_day();
-        UTCTimestamp::try_from_day_and_nanos(day, tod_ns).unwrap()
+        unsafe { UTCTimestamp::from_days_and_nanos_unchecked(day, tod_ns) }
     }
 }
 
