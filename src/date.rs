@@ -25,6 +25,10 @@ impl UTCDate {
     }
 
     /// Unchecked method to create a UTC Date from provided year, month and day.
+    ///
+    /// # Safety
+    /// Unsafe if the user passes an invalid calendar year, month and day combination.
+    /// Invalid inputs are not checked and may cause a panic in other methods.
     #[inline]
     pub const unsafe fn from_components(year: u32, month: u8, day: u8) -> Self {
         Self::_from_components_unchecked(year, month, day)

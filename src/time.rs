@@ -32,6 +32,10 @@ impl UTCTimestamp {
     }
 
     /// Unchecked method to create a UTC Timestamp from UTC day and time-of-day components
+    ///
+    /// # Safety
+    /// Unsafe if the user passes an invalid time-of-day nanoseconds component (exceeding NANOS_PER_DAY).
+    /// Invalid inputs are not checked and may cause a panic in other methods.
     #[inline]
     pub const unsafe fn from_days_and_nanos(day: UTCDay, time_of_day_ns: u64) -> Self {
         Self::_from_days_and_nanos(day, time_of_day_ns)
@@ -355,7 +359,12 @@ mod test {
     fn test_from_days_and_nanos() -> Result<()> {
         let test_cases = [
             (UTCTimestamp::from_utc_nanos(0), UTCDay(0), 0, 4),
-            (UTCTimestamp::from_utc_nanos(123456789), UTCDay(0), 123456789, 4),
+            (
+                UTCTimestamp::from_utc_nanos(123456789),
+                UTCDay(0),
+                123456789,
+                4,
+            ),
             (
                 UTCTimestamp::from_utc_millis(1686756677000),
                 UTCDay(19522),
@@ -375,7 +384,10 @@ mod test {
                 3,
             ),
             (
-                UTCTimestamp::from_utc_duration(Duration::new(u32::MAX as u64 * SECONDS_PER_DAY, 0)),
+                UTCTimestamp::from_utc_duration(Duration::new(
+                    u32::MAX as u64 * SECONDS_PER_DAY,
+                    0,
+                )),
                 UTCDay(u32::MAX),
                 0,
                 0,

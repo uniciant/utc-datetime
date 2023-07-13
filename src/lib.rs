@@ -202,6 +202,10 @@ impl UTCDatetime {
     }
 
     /// Unchecked method to create a datetime frome date and time-of-day components.
+    ///
+    /// # Safety
+    /// Unsafe if the user passes an invalid time-of-day nanoseconds component (exceeding NANOS_PER_DAY).
+    /// Invalid inputs are not checked and may cause a panic in other methods.
     #[inline]
     pub const unsafe fn from_components(date: UTCDate, time_of_day_ns: u64) -> Self {
         Self::_from_components(date, time_of_day_ns)
@@ -220,6 +224,11 @@ impl UTCDatetime {
 
     /// Unchecked method to create datetime from underlying raw components
     /// Will force create a `UTCDate` internally.
+    ///
+    /// # Safety
+    /// Unsafe if the user passes an invalid year-month-day combination or
+    /// time-of-day nanoseconds component (exceeding NANOS_PER_DAY).
+    /// Invalid inputs are not checked and may cause a panic in other methods.
     #[inline]
     pub const unsafe fn from_raw_components(
         year: u32,
