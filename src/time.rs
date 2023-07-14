@@ -25,27 +25,12 @@ impl UTCTimestamp {
         Self(Duration::from_secs(secs))
     }
 
-    /// Unchecked method to create a UTC Timestamp from UTC day and time-of-day components
-    ///
-    /// # Safety
-    /// Unsafe if the user passes an invalid time-of-day nanoseconds component (exceeding NANOS_PER_DAY).
-    /// Invalid inputs are not checked and may cause a panic in other methods.
+    /// Create a UTC Timestamp from UTC day and time-of-day components
     #[inline]
-    pub const unsafe fn from_days_and_nanos_unchecked(day: UTCDay, time_of_day_ns: u64) -> Self {
-        let secs = (day.0 as u64 * SECONDS_PER_DAY) + (time_of_day_ns / NANOS_PER_SECOND);
-        let nanos = (time_of_day_ns % NANOS_PER_SECOND) as u32;
-        Self(Duration::new(secs, nanos))
-    }
-
-    /// Try to create a UTC Timestamp from UTC day and time-of-day components.
-    pub fn try_from_days_and_nanos(day: UTCDay, time_of_day_ns: u64) -> Result<Self> {
-        if time_of_day_ns >= NANOS_PER_DAY {
-            return Err(anyhow!(
-                "Nanoseconds not within a day! (time_of_day_ns: {})",
-                time_of_day_ns
-            ));
-        }
-        Ok(unsafe { Self::from_days_and_nanos_unchecked(day, time_of_day_ns) })
+    pub const fn from_day_and_tod(day: UTCDay, tod: UTCTimeOfDay) -> Self {
+        let secs = day.0 as u64 * SECONDS_PER_DAY + tod.as_secs() as u64;
+        let subsec_ns = tod.as_subsec_ns();
+        Self(Duration::new(secs, subsec_ns))
     }
 
     /// Try to create a UTC Timestamp from the local system time.
@@ -77,8 +62,9 @@ impl UTCTimestamp {
 
     /// Get the UTC time-of-day in nanoseconds.
     #[inline]
-    pub const fn as_time_of_day_ns(&self) -> u64 {
-        ((self.0.as_secs() % SECONDS_PER_DAY) * NANOS_PER_SECOND) + (self.0.subsec_nanos() as u64)
+    pub const fn as_tod(&self) -> UTCTimeOfDay {
+        let ns = ((self.0.as_secs() % SECONDS_PER_DAY) * NANOS_PER_SECOND) + (self.0.subsec_nanos() as u64);
+        unsafe { UTCTimeOfDay::from_nanos_unchecked(ns) }
     }
 
     /// Get the number of UTC days since the Unix Epoch.
@@ -226,8 +212,6 @@ where
     fn as_utc_timestamp(&self) -> UTCTimestamp;
 }
 
-/// UTC Day count.
-/// UTC Days is the number of days since the Unix Epoch.
 #[derive(
     Debug,
     Clone,
@@ -245,6 +229,8 @@ where
     From,
     Into,
 )]
+/// UTC Day count.
+/// UTC Days is the number of days since the Unix Epoch.
 pub struct UTCDay(u32);
 
 impl UTCDay {
@@ -344,57 +330,214 @@ impl From<UTCTimestamp> for UTCDay {
     }
 }
 
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Default,
+    Add,
+    Sub,
+    Mul,
+    Div,
+)]
+/// UTC Time of Day
+pub struct UTCTimeOfDay(u64);
+
+impl UTCTimeOfDay {
+    /// Unchecked method to create time of day from nanoseconds
+    ///
+    /// ### Safety
+    /// Unsafe if the user passes an invalid time-of-day nanoseconds component (exceeding NANOS_PER_DAY).
+    /// Invalid inputs are not checked and may cause a panic in other methods.
+    #[inline]
+    pub const unsafe fn from_nanos_unchecked(ns: u64) -> Self {
+        Self(ns)
+    }
+
+    /// Unchecked method to create time of day from microseconds
+    ///
+    /// ### Safety
+    /// Unsafe if the user passes an invalid time-of-day microsecond component (exceeding MICROS_PER_DAY).
+    /// Invalid inputs are not checked and may cause a panic in other methods.
+    #[inline]
+    pub const unsafe fn from_micros_unchecked(us: u64) -> Self {
+        Self(us * NANOS_PER_MICRO)
+    }
+
+    /// Unchecked method to create time of day from milliseconds
+    ///
+    /// ### Safety
+    /// Unsafe if the user passes an invalid time-of-day millisecond component (exceeding MILLIS_PER_DAY).
+    /// Invalid inputs are not checked and may cause a panic in other methods.
+    #[inline]
+    pub const unsafe fn from_millis_unchecked(ms: u32) -> Self {
+        Self((ms as u64) * NANOS_PER_MILLI)
+    }
+
+    /// Unchecked method to create time of day from seconds
+    ///
+    /// ### Safety
+    /// Unsafe if the user passes an invalid time-of-day seconds component (exceeding SECONDS_PER_DAY).
+    /// Invalid inputs are not checked and may cause a panic in other methods.
+    #[inline]
+    pub const unsafe fn from_secs_unchecked(s: u32) -> Self {
+        Self((s as u64) * NANOS_PER_SECOND)
+    }
+
+    const fn _ns_from_hhmmss(hrs: u8, mins: u8, secs: u8, subsec_ns: u32) -> u64 {
+        (subsec_ns as u64)
+            + (hrs as u64) * NANOS_PER_HOUR
+            + (mins as u64) * NANOS_PER_MINUTE
+            + (secs as u64) * NANOS_PER_SECOND
+    }
+
+    /// Unchecked method to create UTC time of day from hours, minutes, seconds and subsecond (nanosecond) components
+    ///
+    /// # Safety
+    /// Unsafe if the user passes a measure of time exceeding a day.
+    /// Invalid inputs are not checked and may cause a panic in other methods.
+    #[inline]
+    pub const unsafe fn from_hhmmss_unchecked(hrs: u8, mins: u8, secs: u8, subsec_ns: u32) -> Self {
+        Self(Self::_ns_from_hhmmss(hrs, mins, secs, subsec_ns))
+    }
+
+    /// Try to create UTC time of day from nanoseconds
+    pub fn try_from_nanos(ns: u64) -> Result<Self> {
+        if ns >= NANOS_PER_DAY {
+            return Err(anyhow!(
+                "Nanoseconds not within a day! (ns: {})",
+                ns
+            ));
+        }
+        Ok(Self(ns))
+    }
+
+    /// Try to create UTC time of day from microseconds
+    pub fn try_from_micros(us: u64) -> Result<Self> {
+        let ns = us.checked_mul(NANOS_PER_MICRO)
+            .ok_or(anyhow!("Microseconds out of range!"))?;
+        Self::try_from_nanos(ns)
+    }
+
+    /// Try to create UTC time of day from milliseconds
+    pub fn try_from_millis(ms: u32) -> Result<Self> {
+        Self::try_from_nanos((ms as u64) * NANOS_PER_MILLI)
+    }
+
+    /// Try to create UTC time of day from seconds
+    pub fn try_from_secs(s: u32) -> Result<Self> {
+        Self::try_from_nanos((s as u64) * NANOS_PER_SECOND)
+    }
+
+    /// Try to create UTC time of day from hours, minutes, seconds and subsecond (nanosecond) components
+    pub fn try_from_hhmmss(hrs: u8, mins: u8, secs: u8, subsec_ns: u32) -> Result<Self> {
+        Self::try_from_nanos(Self::_ns_from_hhmmss(hrs, mins, secs, subsec_ns))
+    }
+
+    /// Consume self into nanoseconds
+    #[inline]
+    pub const fn to_nanos(self) -> u64 {
+        self.0
+    }
+
+    /// Time of day as nanoseconds
+    #[inline]
+    pub const fn as_nanos(&self) -> u64 {
+        self.0
+    }
+
+    /// Time of day as microseconds
+    #[inline]
+    pub const fn as_micros(&self) -> u64 {
+        self.0 / NANOS_PER_MICRO
+    }
+
+    /// Time of day as milliseconds
+    #[inline]
+    pub const fn as_millis(&self) -> u32 {
+        (self.0 / NANOS_PER_MILLI) as u32
+    }
+
+    /// Time of day as seconds
+    #[inline]
+    pub const fn as_secs(&self) -> u32 {
+        (self.0 / NANOS_PER_SECOND) as u32
+    }
+
+    /// Time of day as hours, minutes and seconds (hhmmss) components
+    ///
+    /// Returns tuple `(hrs: u8, mins: u8, secs: u8, subsec_ns: u32)`
+    pub const fn as_hhmmss(&self) -> (u8, u8, u8) {
+        let hrs = (self.0 / NANOS_PER_HOUR) as u8;
+        let mins = ((self.0 % NANOS_PER_HOUR) / NANOS_PER_MINUTE) as u8;
+        let secs = ((self.0 % NANOS_PER_MINUTE) / NANOS_PER_SECOND) as u8;
+        (hrs, mins, secs)
+    }
+
+    /// Return subsecond component of time of day (in nanoseconds)
+    #[inline]
+    pub const fn as_subsec_ns(&self) -> u32 {
+        (self.0 % NANOS_PER_SECOND)  as u32
+    }
+}
+
 #[cfg(test)]
 mod test {
-    use anyhow::Result;
     use core::time::Duration;
 
-    use crate::time::{UTCDay, UTCTimestamp, UTCTransformations, SECONDS_PER_DAY};
+    use anyhow::Result;
+
+    use crate::{time::{UTCDay, UTCTimeOfDay, UTCTimestamp, UTCTransformations}, constants::{SECONDS_PER_DAY, NANOS_PER_DAY, NANOS_PER_SECOND}};
 
     #[test]
     fn test_from_days_and_nanos() -> Result<()> {
         let test_cases = [
-            (UTCTimestamp::from_utc_nanos(0), UTCDay(0), 0, 4),
+            (UTCTimestamp::from_utc_nanos(0), UTCDay::from_u32(0), UTCTimeOfDay::try_from_secs(0)?, 4),
             (
                 UTCTimestamp::from_utc_nanos(123456789),
-                UTCDay(0),
-                123456789,
+                UTCDay::from_u32(0),
+                UTCTimeOfDay::try_from_nanos(123456789)?,
                 4,
             ),
             (
                 UTCTimestamp::from_utc_millis(1686756677000),
-                UTCDay(19522),
-                55_877_000_000_000,
+                UTCDay::from_u32(19522),
+                UTCTimeOfDay::try_from_nanos(55_877_000_000_000)?,
                 3,
             ),
             (
                 UTCTimestamp::from_utc_millis(1709220677000),
-                UTCDay(19782),
-                55_877_000_000_000,
+                UTCDay::from_u32(19782),
+                UTCTimeOfDay::try_from_micros(55_877_000_000)?,
                 4,
             ),
             (
                 UTCTimestamp::from_utc_millis(1677684677000),
-                UTCDay(19417),
-                55_877_000_000_000,
+                UTCDay::from_u32(19417),
+                UTCTimeOfDay::try_from_millis(55_877_000)?,
                 3,
             ),
             (
                 UTCTimestamp::from_utc_duration(Duration::new(
-                    u32::MAX as u64 * SECONDS_PER_DAY,
-                    0,
+                    (((u32::MAX as u64) + 1) * SECONDS_PER_DAY) - 1,
+                    (NANOS_PER_SECOND - 1) as u32,
                 )),
-                UTCDay(u32::MAX),
-                0,
+                UTCDay::from_u32(u32::MAX),
+                UTCTimeOfDay::try_from_nanos(NANOS_PER_DAY - 1)?,
                 0,
             ),
         ];
 
-        for (expected_timestamp, utc_days, time_of_day_ns, weekday) in test_cases {
-            let timestamp = UTCTimestamp::try_from_days_and_nanos(utc_days, time_of_day_ns)?;
+        for (expected_timestamp, utc_days, tod, weekday) in test_cases {
+            let timestamp = UTCTimestamp::from_day_and_tod(utc_days, tod);
             assert_eq!(timestamp, expected_timestamp);
             assert_eq!(UTCDay::from_utc_timestamp(timestamp), utc_days);
-            assert_eq!(timestamp.as_time_of_day_ns(), time_of_day_ns);
+            assert_eq!(timestamp.as_tod(), tod);
             assert_eq!(utc_days.as_utc_weekday(), weekday);
         }
 
