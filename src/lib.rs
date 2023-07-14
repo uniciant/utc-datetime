@@ -180,9 +180,8 @@ use core::time::Duration;
 
 use anyhow::{anyhow, Result};
 
-use constants::*;
 use date::UTCDate;
-use time::{UTCTimestamp, UTCTransformations};
+use time::{UTCTimestamp, UTCTransformations, UTCTimeOfDay};
 
 /// UTC Datetime.
 /// A UTC Datetime consists of a date component and a time-of-day component
@@ -190,32 +189,17 @@ use time::{UTCTimestamp, UTCTransformations};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct UTCDatetime {
     date: UTCDate,
-    time_of_day_ns: u64,
+    tod: UTCTimeOfDay,
 }
 
 impl UTCDatetime {
-    /// Unchecked method to create a datetime frome date and time-of-day components.
-    ///
-    /// # Safety
-    /// Unsafe if the user passes an invalid time-of-day nanoseconds component (exceeding NANOS_PER_DAY).
-    /// Invalid inputs are not checked and may cause a panic in other methods.
+    /// Create a datetime frome date and time-of-day components.
     #[inline]
-    pub const unsafe fn from_components_unchecked(date: UTCDate, time_of_day_ns: u64) -> Self {
+    pub const fn from_components(date: UTCDate, tod: UTCTimeOfDay) -> Self {
         Self {
             date,
-            time_of_day_ns,
+            tod,
         }
-    }
-
-    /// Try to create a datetime from date and time-of-day components.
-    pub fn try_from_components(date: UTCDate, time_of_day_ns: u64) -> Result<Self> {
-        if time_of_day_ns >= NANOS_PER_DAY {
-            return Err(anyhow!(
-                "Nanoseconds not within a day! (time_of_day_ns: {})",
-                time_of_day_ns
-            ));
-        }
-        Ok(unsafe { Self::from_components_unchecked(date, time_of_day_ns) })
     }
 
     /// Unchecked method to create datetime from underlying raw components
@@ -230,11 +214,15 @@ impl UTCDatetime {
         year: u32,
         month: u8,
         day: u8,
-        time_of_day_ns: u64,
+        hrs: u8,
+        mins: u8,
+        secs: u8,
+        subsec_ns: u32,
     ) -> Self {
         unsafe {
             let date = UTCDate::from_components_unchecked(year, month, day);
-            Self::from_components_unchecked(date, time_of_day_ns)
+            let tod = UTCTimeOfDay::from_hhmmss_unchecked(hrs, mins, secs, subsec_ns);
+            Self::from_components(date, tod)
         }
     }
 
@@ -244,26 +232,30 @@ impl UTCDatetime {
         year: u32,
         month: u8,
         day: u8,
-        time_of_day_ns: u64,
+        hrs: u8,
+        mins: u8,
+        secs: u8,
+        subsec_ns: u32,
     ) -> Result<Self> {
         let date = UTCDate::try_from_components(year, month, day)?;
-        Self::try_from_components(date, time_of_day_ns)
+        let tod = UTCTimeOfDay::try_from_hhmmss(hrs, mins, secs, subsec_ns)?;
+        Ok(Self::from_components(date, tod))
     }
 
     /// Get copy of the internal date and time-of-day components
     ///
-    /// Returns tuple: `(date: UTCDate, time_of_day_ns: u64)`
+    /// Returns tuple: `(date: UTCDate, tod: UTCTimeOfDay)`
     #[inline]
-    pub const fn as_components(&self) -> (UTCDate, u64) {
-        (self.date, self.time_of_day_ns)
+    pub const fn as_components(&self) -> (UTCDate, UTCTimeOfDay) {
+        (self.date, self.tod)
     }
 
     /// Consume self into the internal date and time-of-day components
     ///
-    /// Returns tuple: `(date: UTCDate, time_of_day_ns: u64)`
+    /// Returns tuple: `(date: UTCDate, tod: UTCTimeOfDay)`
     #[inline]
-    pub const fn to_components(self) -> (UTCDate, u64) {
-        (self.date, self.time_of_day_ns)
+    pub const fn to_components(self) -> (UTCDate, UTCTimeOfDay) {
+        (self.date, self.tod)
     }
 
     /// Get the internal date component.
@@ -274,52 +266,89 @@ impl UTCDatetime {
 
     /// Get the internal time-of-day component.
     #[inline]
-    pub const fn as_time_of_day_ns(&self) -> u64 {
-        self.time_of_day_ns
+    pub const fn as_tod(&self) -> UTCTimeOfDay {
+        self.tod
     }
 
-    /// Get the time-of-day expressed as hours minutes and seconds.
+    /// Try parse datetime from string in the format:
     ///
-    /// Returns tuple `(hours: u8, minutes: u8, seconds: u8)`
-    #[inline]
-    pub const fn as_hours_minutes_seconds(&self) -> (u8, u8, u8) {
-        let hours = (self.time_of_day_ns / NANOS_PER_HOUR) as u8;
-        let minutes = ((self.time_of_day_ns % NANOS_PER_HOUR) / NANOS_PER_MINUTE) as u8;
-        let seconds = ((self.time_of_day_ns % NANOS_PER_MINUTE) / NANOS_PER_SECOND) as u8;
-        (hours, minutes, seconds)
-    }
+    /// * `YYYY-MM-DDThh:mm:ssZ` or
+    /// * `YYYY-MM-DDThh:mm:ss.nnnZ`
+    ///
+    /// Decimal precision of up to 9 places (inclusive) supported.
+    ///
+    /// Conforms to ISO 8601:
+    /// <https://www.w3.org/TR/NOTE-datetime>
+    pub fn try_from_iso_datetime(iso: &str) -> Result<Self> {
+        let (year_str, rem) = iso.split_at(4); // remainder = "-MM-DDThh:mm:ss.nnnZ"
+        let (month_str, rem) = rem[1..].split_at(2); // remainder = "-DDThh:mm:ss.nnnZ"
+        let (day_str, rem) = rem[1..].split_at(2); // remainder = "Thh:mm:ss.nnnZ"
+        let (hour_str, rem) = rem[1..].split_at(2); // remainder = ":mm:ss.nnnZ"
+        let (minute_str, rem) = rem[1..].split_at(2); // remainder = ":ss.nnnZ"
+        let (second_str, rem) = rem[1..].split_at(2); // remainder = ".nnnZ"
 
-    /// Get the sub-second component of the time-of-day
-    /// expressed in nanoseconds.
-    #[inline]
-    pub const fn as_subsec_ns(&self) -> u32 {
-        (self.time_of_day_ns % NANOS_PER_SECOND) as u32
+        let year: u32 = year_str.parse()?;
+        let month: u8 = month_str.parse()?;
+        let day: u8 = day_str.parse()?;
+        let hour: u8 = hour_str.parse()?;
+        let minute: u8 = minute_str.parse()?;
+        let second: u8 = second_str.parse()?;
+
+        let rem_len = rem.len();
+        let subsec_ns: u32 = if rem_len > 1 {
+            let subsec_str = &rem[1..(rem_len - 1)]; // "nnn"
+            let precision: u32 = subsec_str.len() as u32;
+            if precision > 9 {
+                return Err(anyhow!("Cannot parse ISO datetime: Precision ({}) exceeds maximum of 9", precision));
+            }
+            if precision == 0 {
+                0
+            } else {
+                let subsec: u32 = subsec_str.parse()?;
+                subsec * 10u32.pow(9 - precision)
+            }
+        } else {
+            0
+        };
+
+        Ok(Self::try_from_raw_components(year, month, day, hour, minute, second, subsec_ns)?)
     }
 
     /// Return datetime as a string in the format:
-    /// `YYYY-MM-DDThh:mm:ssZ`
+    /// * Precision = `None`: `YYYY-MM-DDThh:mm:ssZ`
+    /// * Precision = `Some(3)`: `YYYY-MM-DDThh:mm:ss.nnnZ`
+    ///
+    /// If specified, `precision` denotes the number decimal places included after the
+    /// seconds, limited to 9 decimal places (nanosecond precision).
+    /// If `None`, no decimal component is included.
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
     #[cfg(feature = "std")]
-    pub fn as_iso_datetime(&self) -> String {
+    pub fn as_iso_datetime(&self, precision: Option<usize>) -> String {
         let date = self.date.as_iso_date();
-        let (hours, minutes, seconds) = self.as_hours_minutes_seconds();
-        format!("{date}T{:02}:{:02}:{:02}Z", hours, minutes, seconds)
+        let (hours, minutes, seconds) = self.tod.as_hhmmss();
+        let mut s = format!("{date}T{:02}:{:02}:{:02}", hours, minutes, seconds);
+        if let Some(p) = precision {
+            let subsec_ns_str = format!(".{:09}", self.tod.as_subsec_ns());
+            s.push_str(&subsec_ns_str[..=p.min(9)])
+        }
+        s.push('Z');
+        s
     }
 }
 
 impl UTCTransformations for UTCDatetime {
     fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self {
-        let tod_ns = timestamp.as_time_of_day_ns();
+        let tod = timestamp.as_tod();
         let date = UTCDate::from_utc_timestamp(timestamp);
-        unsafe { Self::from_components_unchecked(date, tod_ns) }
+        Self::from_components(date, tod)
     }
 
     fn as_utc_timestamp(&self) -> UTCTimestamp {
-        let (date, tod_ns) = self.as_components();
+        let (date, tod) = self.as_components();
         let day = date.as_utc_day();
-        unsafe { UTCTimestamp::from_days_and_nanos_unchecked(day, tod_ns) }
+        UTCTimestamp::from_day_and_tod(day, tod)
     }
 }
 
@@ -344,14 +373,14 @@ mod test {
     #[test]
     fn test_datetime_from_raw_components() -> Result<()> {
         let test_cases = [
-            (1970, 1, 1, 0, 0, 0),                                 // thu, 00:00:00.000
-            (2023, 6, 14, 33_609_648_000_000, 19522, 648_000_000), // wed, 09:20:09.648
+            (1970, 1, 1, 0, 0, 0, 0, 0, 0),                                 // thu, 00:00:00.000
+            (2023, 6, 14, 09, 20, 09, 648_000_000, 33_609_648_000_000, 19522), // wed, 09:20:09.648
         ];
 
-        for (year, month, day, time_of_day_ns, expected_utc_day, expected_subsec_ns) in test_cases {
-            let datetime = UTCDatetime::try_from_raw_components(year, month, day, time_of_day_ns)?;
+        for (year, month, day, hours, mins, secs, subsec_ns, expected_tod_ns, expected_utc_day) in test_cases {
+            let datetime = UTCDatetime::try_from_raw_components(year, month, day, hours, mins, secs, subsec_ns)?;
             assert_eq!(datetime.as_date().as_utc_day(), expected_utc_day.into());
-            assert_eq!(datetime.as_subsec_ns(), expected_subsec_ns);
+            assert_eq!(datetime.as_tod().as_nanos(), expected_tod_ns);
         }
 
         Ok(())
@@ -359,15 +388,25 @@ mod test {
 
     #[cfg(feature = "std")]
     #[test]
-    fn test_datetime_to_iso_time() -> Result<()> {
+    fn test_datetime_iso_conversions() -> Result<()> {
+        use crate::{date::UTCDate, time::UTCTimeOfDay};
+
         let test_cases = [
-            (1970, 1, 1, 0, "1970-01-01T00:00:00Z"), // thu, 00:00:00.000
-            (2023, 6, 14, 33_609_648_000_000, "2023-06-14T09:20:09Z"), // wed, 09:20:09.648
+            (1970, 1, 1, 0, None, "1970-01-01T00:00:00Z"), // thu, 00:00:00
+            (1970, 1, 1, 0, Some(0), "1970-01-01T00:00:00.Z"), // thu, 00:00:00.
+            (1970, 1, 1, 0, Some(3), "1970-01-01T00:00:00.000Z"), // thu, 00:00:00.000
+            (1970, 1, 1, 0, Some(9), "1970-01-01T00:00:00.000000000Z"), // thu, 00:00:00.000000000
+            (1970, 1, 1, 0, Some(11), "1970-01-01T00:00:00.000000000Z"), // thu, 00:00:00.000000000
+            (2023, 6, 14, 33_609_648_000_000, Some(3), "2023-06-14T09:20:09.648Z"), // wed, 09:20:09.648
         ];
 
-        for (year, month, day, time_of_day_ns, expected_iso_datetime) in test_cases {
-            let datetime = UTCDatetime::try_from_raw_components(year, month, day, time_of_day_ns)?;
-            assert_eq!(datetime.as_iso_datetime(), expected_iso_datetime);
+        for (year, month, day, tod_ns, precision, iso_datetime) in test_cases {
+            let date = UTCDate::try_from_components(year, month, day)?;
+            let tod = UTCTimeOfDay::try_from_nanos(tod_ns)?;
+            let datetime_from_components = UTCDatetime::from_components(date, tod);
+            let datetime_from_iso = UTCDatetime::try_from_iso_datetime(iso_datetime)?;
+            assert_eq!(datetime_from_components.as_iso_datetime(precision), iso_datetime);
+            assert_eq!(datetime_from_iso, datetime_from_components)
         }
 
         Ok(())
