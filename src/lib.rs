@@ -21,8 +21,10 @@
 //! - Create UTC timestamps and datetimes from `Duration`s, or directly from unsigned UTC sub-second measurements, or from the system time.
 //! - Determine the civil calendar date, time of day, weekday or the number of days since the Unix Epoch.
 //! - Obtain information on a date or time, such as if it occurs within a leap year, or the number of days in the month.
-//! - Format dates according to ISO 8601 `(YYYY-MM-DD)`
-//! - Format datetimes according to ISO 8601 `(YYYY-MM-DDThh:mm:ssZ)`
+//! - Convert between time representations efficiently and ergonomically.
+//! - Compile-time const evaluation wherever possible.
+//! - Format and parse dates according to ISO 8601 `(YYYY-MM-DD)`
+//! - Format and parse datetimes according to ISO 8601 `(YYYY-MM-DDThh:mm:ssZ)`
 //! - Provides constants useful for time transformations: [`utc-dt::constants`](https://docs.rs/utc-dt/latest/utc_dt/constants/index.html)
 //! - Nanosecond resolution.
 //! - `#![no_std]` support.
