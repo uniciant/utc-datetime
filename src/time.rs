@@ -409,10 +409,7 @@ impl UTCTimeOfDay {
     /// Try to create UTC time of day from nanoseconds
     pub fn try_from_nanos(ns: u64) -> Result<Self> {
         if ns >= NANOS_PER_DAY {
-            bail!(
-                "Nanoseconds not within a day! (ns: {})",
-                ns
-            );
+            bail!("Nanoseconds not within a day! (ns: {})", ns);
         }
         Ok(Self(ns))
     }
@@ -483,6 +480,59 @@ impl UTCTimeOfDay {
     #[inline]
     pub const fn as_subsec_ns(&self) -> u32 {
         (self.0 % NANOS_PER_SECOND)  as u32
+    }
+
+    /// Try parse time-of-day from string in the format:
+    /// * `Thh:mm:ssZ`
+    /// * `Thh:mm:ss.nnnZ` (up to 9 decimal places)
+    ///
+    /// Conforms to ISO 8601:
+    /// <https://www.w3.org/TR/NOTE-datetime>
+    pub fn try_from_iso_tod(iso: &str) -> Result<Self> {
+        let (hour_str, rem) = iso[1..].split_at(2); // remainder = ":mm:ss.nnnZ"
+        let (minute_str, rem) = rem[1..].split_at(2); // remainder = ":ss.nnnZ"
+        let (second_str, rem) = rem[1..].split_at(2); // remainder = ".nnnZ"
+
+        let hrs: u8 = hour_str.parse()?;
+        let mins: u8 = minute_str.parse()?;
+        let secs: u8 = second_str.parse()?;
+
+        let rem_len = rem.len();
+        let subsec_ns: u32 = if rem_len > 1 {
+            let subsec_str = &rem[1..(rem_len - 1)]; // "nnn"
+            let precision: u32 = subsec_str.len() as u32;
+            if precision > 9 {
+                bail!("Cannot parse ISO time-of-day: Precision ({}) exceeds maximum of 9", precision);
+            }
+            if precision == 0 {
+                0
+            } else {
+                let subsec: u32 = subsec_str.parse()?;
+                subsec * 10u32.pow(9 - precision)
+            }
+        } else {
+            0
+        };
+
+        Self::try_from_hhmmss(hrs, mins, secs, subsec_ns)
+    }
+
+    /// Return time-of-day as a string in the format:
+    /// * Precision = `None`: `Thh:mm:ssZ`
+    /// * Precision = `Some(3)`: `Thh:mm:ss.nnnZ`
+    ///
+    /// Conforms to ISO 8601:
+    /// <https://www.w3.org/TR/NOTE-datetime>
+    #[cfg(feature = "std")]
+    pub fn as_iso_tod(&self, precision: Option<usize>) -> String {
+        let (hrs, mins, secs) = self.as_hhmmss();
+        let mut s = format!("T{:02}:{:02}:{:02}", hrs, mins, secs);
+        if let Some(p) = precision {
+            let subsec_ns_str = format!(".{:09}", self.as_subsec_ns());
+            s.push_str(&subsec_ns_str[..=p.min(9)])
+        }
+        s.push('Z');
+        s
     }
 }
 

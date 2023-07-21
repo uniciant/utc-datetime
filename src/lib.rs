@@ -56,12 +56,11 @@
 //!     // Use UTC Timestamp to get a time measurement since the epoch (for secs, millis, micros, nanos)
 //!     let utc_millis = utc_timestamp.as_millis();
 //!     // Use UTC Timestamp to get time-of-day
-//!     let time_of_day_ns: u64 = utc_timestamp.as_time_of_day_ns();
+//!     let utc_tod: UTCTimeOfDay = utc_timestamp.as_tod();
 //!     // Use UTC Timestamp to get days since epoch (ie. UTC Day)
 //!     let utc_day: UTCDay = utc_timestamp.as_day();
-//!     // UTC Timestamp from a UTC Day and time-of-day components
-//!     let utc_timestamp = UTCTimestamp::try_from_days_and_nanos(utc_day, time_of_day_ns).unwrap(); // OR
-//!     let utc_timestamp = unsafe { UTCTimestamp::from_days_and_nanos_unchecked(utc_day, time_of_day_ns) };
+//!     // UTC Timestamp from UTC Day and time-of-day components
+//!     let utc_timestamp = UTCTimestamp::from_day_and_tod(utc_day, utc_tod);
 //!
 //!     // UTC Day from an integer
 //!     let utc_day = UTCDay::from(19523); // OR
@@ -180,7 +179,7 @@ pub mod constants;
 
 use core::time::Duration;
 
-use anyhow::{anyhow, Result, bail};
+use anyhow::Result;
 
 use date::UTCDate;
 use time::{UTCTimestamp, UTCTransformations, UTCTimeOfDay};
@@ -202,46 +201,6 @@ impl UTCDatetime {
             date,
             tod,
         }
-    }
-
-    /// Unchecked method to create datetime from underlying raw components
-    /// Will force create a `UTCDate` internally.
-    ///
-    /// # Safety
-    /// Unsafe if the user passes an invalid year-month-day combination or
-    /// time-of-day nanoseconds component (exceeding NANOS_PER_DAY).
-    /// Invalid inputs are not checked and may cause a panic in other methods.
-    #[inline]
-    pub const unsafe fn from_raw_components_unchecked(
-        year: u32,
-        month: u8,
-        day: u8,
-        hrs: u8,
-        mins: u8,
-        secs: u8,
-        subsec_ns: u32,
-    ) -> Self {
-        unsafe {
-            let date = UTCDate::from_components_unchecked(year, month, day);
-            let tod = UTCTimeOfDay::from_hhmmss_unchecked(hrs, mins, secs, subsec_ns);
-            Self::from_components(date, tod)
-        }
-    }
-
-    /// Try to create a datetime from underlying raw components.
-    /// Will try to create a `UTCDate` internally.
-    pub fn try_from_raw_components(
-        year: u32,
-        month: u8,
-        day: u8,
-        hrs: u8,
-        mins: u8,
-        secs: u8,
-        subsec_ns: u32,
-    ) -> Result<Self> {
-        let date = UTCDate::try_from_components(year, month, day)?;
-        let tod = UTCTimeOfDay::try_from_hhmmss(hrs, mins, secs, subsec_ns)?;
-        Ok(Self::from_components(date, tod))
     }
 
     /// Get copy of the internal date and time-of-day components
@@ -282,38 +241,10 @@ impl UTCDatetime {
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
     pub fn try_from_iso_datetime(iso: &str) -> Result<Self> {
-        let (year_str, rem) = iso.split_at(4); // remainder = "-MM-DDThh:mm:ss.nnnZ"
-        let (month_str, rem) = rem[1..].split_at(2); // remainder = "-DDThh:mm:ss.nnnZ"
-        let (day_str, rem) = rem[1..].split_at(2); // remainder = "Thh:mm:ss.nnnZ"
-        let (hour_str, rem) = rem[1..].split_at(2); // remainder = ":mm:ss.nnnZ"
-        let (minute_str, rem) = rem[1..].split_at(2); // remainder = ":ss.nnnZ"
-        let (second_str, rem) = rem[1..].split_at(2); // remainder = ".nnnZ"
-
-        let year: u32 = year_str.parse()?;
-        let month: u8 = month_str.parse()?;
-        let day: u8 = day_str.parse()?;
-        let hour: u8 = hour_str.parse()?;
-        let minute: u8 = minute_str.parse()?;
-        let second: u8 = second_str.parse()?;
-
-        let rem_len = rem.len();
-        let subsec_ns: u32 = if rem_len > 1 {
-            let subsec_str = &rem[1..(rem_len - 1)]; // "nnn"
-            let precision: u32 = subsec_str.len() as u32;
-            if precision > 9 {
-                bail!("Cannot parse ISO datetime: Precision ({}) exceeds maximum of 9", precision);
-            }
-            if precision == 0 {
-                0
-            } else {
-                let subsec: u32 = subsec_str.parse()?;
-                subsec * 10u32.pow(9 - precision)
-            }
-        } else {
-            0
-        };
-
-        Ok(Self::try_from_raw_components(year, month, day, hour, minute, second, subsec_ns)?)
+        let (date_str, tod_str) = iso.split_at(10);
+        let date = UTCDate::try_from_iso_date(date_str)?;
+        let tod = UTCTimeOfDay::try_from_iso_tod(tod_str)?;
+        Ok(Self::from_components(date, tod))
     }
 
     /// Return datetime as a string in the format:
@@ -328,15 +259,7 @@ impl UTCDatetime {
     /// <https://www.w3.org/TR/NOTE-datetime>
     #[cfg(feature = "std")]
     pub fn as_iso_datetime(&self, precision: Option<usize>) -> String {
-        let date = self.date.as_iso_date();
-        let (hours, minutes, seconds) = self.tod.as_hhmmss();
-        let mut s = format!("{date}T{:02}:{:02}:{:02}", hours, minutes, seconds);
-        if let Some(p) = precision {
-            let subsec_ns_str = format!(".{:09}", self.tod.as_subsec_ns());
-            s.push_str(&subsec_ns_str[..=p.min(9)])
-        }
-        s.push('Z');
-        s
+        self.date.as_iso_date() + &self.tod.as_iso_tod(precision)
     }
 }
 
@@ -370,7 +293,7 @@ impl From<Duration> for UTCDatetime {
 mod test {
     use anyhow::Result;
 
-    use crate::UTCDatetime;
+    use crate::{UTCDatetime, date::UTCDate, time::UTCTimeOfDay};
 
     #[test]
     fn test_datetime_from_raw_components() -> Result<()> {
@@ -379,8 +302,10 @@ mod test {
             (2023, 6, 14, 09, 20, 09, 648_000_000, 33_609_648_000_000, 19522), // wed, 09:20:09.648
         ];
 
-        for (year, month, day, hours, mins, secs, subsec_ns, expected_tod_ns, expected_day) in test_cases {
-            let datetime = UTCDatetime::try_from_raw_components(year, month, day, hours, mins, secs, subsec_ns)?;
+        for (year, month, day, hrs, mins, secs, subsec_ns, expected_tod_ns, expected_day) in test_cases {
+            let date = UTCDate::try_from_components(year, month, day)?;
+            let tod = UTCTimeOfDay::try_from_hhmmss(hrs, mins, secs, subsec_ns)?;
+            let datetime = UTCDatetime::from_components(date, tod);
             assert_eq!(datetime.as_date().as_day(), expected_day.into());
             assert_eq!(datetime.as_tod().as_nanos(), expected_tod_ns);
         }

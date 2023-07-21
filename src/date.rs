@@ -131,13 +131,29 @@ impl UTCDate {
         }
     }
 
+    /// Try parse date from string in the format:
+    /// * `YYYY-MM-DD`
+    ///
+    /// Conforms to ISO 8601:
+    /// <https://www.w3.org/TR/NOTE-datetime>
+    pub fn try_from_iso_date(iso: &str) -> Result<Self> {
+        // handle slice
+        let (year_str, rem) = iso.split_at(4); // remainder = "-MM-DD"
+        let (month_str, rem) = rem[1..].split_at(2); // remainder = "-DD"
+        let day_str = &rem[1..];
+        // parse
+        let year: u32 = year_str.parse()?;
+        let month: u8 = month_str.parse()?;
+        let day: u8 = day_str.parse()?;
+        Self::try_from_components(year, month, day)
+    }
+
     /// Return date as a string in the format:
-    /// `YYYY-MM-DD`
+    /// * `YYYY-MM-DD`
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
     #[cfg(feature = "std")]
-    #[inline]
     pub fn as_iso_date(&self) -> String {
         format!("{:04}-{:02}-{:02}", self.year, self.month, self.day)
     }
