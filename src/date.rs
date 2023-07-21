@@ -105,24 +105,6 @@ impl UTCDate {
         (self.year, self.month, self.day)
     }
 
-    /// Return day component of date
-    #[inline]
-    pub const fn as_day(&self) -> u8 {
-        self.day
-    }
-
-    /// Return month component of date
-    #[inline]
-    pub const fn as_month(&self) -> u8 {
-        self.month
-    }
-
-    /// Return year component of date
-    #[inline]
-    pub const fn as_year(&self) -> u32 {
-        self.year
-    }
-
     /// Returns whether date is within a leap year.
     ///
     /// Reference:
