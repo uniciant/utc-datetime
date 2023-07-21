@@ -58,7 +58,7 @@ impl UTCDate {
     /// <http://howardhinnant.github.io/date_algorithms.html#civil_from_days>
     ///
     /// Simplified for unsigned days/years
-    pub const fn from_utc_day(utc_day: UTCDay) -> Self {
+    pub const fn from_day(utc_day: UTCDay) -> Self {
         let z = utc_day.as_u32() + 719468;
         let era = z / 146097;
         let doe = z - (era * 146097);
@@ -77,7 +77,7 @@ impl UTCDate {
     /// <http://howardhinnant.github.io/date_algorithms.html#days_from_civil>
     ///
     /// Simplified for unsigned days/years
-    pub const fn as_utc_day(&self) -> UTCDay {
+    pub const fn as_day(&self) -> UTCDay {
         let m = self.month as u32;
         let d = self.day as u32;
         let y = self.year - ((m <= 2) as u32);
@@ -162,67 +162,67 @@ impl UTCDate {
 }
 
 impl UTCTransformations for UTCDate {
-    fn from_utc_secs(s: u64) -> Self {
-        let utc_day = UTCDay::from_utc_secs(s);
-        Self::from_utc_day(utc_day)
+    fn from_secs(s: u64) -> Self {
+        let utc_day = UTCDay::from_secs(s);
+        Self::from_day(utc_day)
     }
 
-    fn as_utc_secs(&self) -> u64 {
-        self.as_utc_day().as_utc_secs()
+    fn as_secs(&self) -> u64 {
+        self.as_day().as_secs()
     }
 
-    fn from_utc_millis(s: u64) -> Self {
-        let utc_day = UTCDay::from_utc_millis(s);
-        Self::from_utc_day(utc_day)
+    fn from_millis(s: u64) -> Self {
+        let utc_day = UTCDay::from_millis(s);
+        Self::from_day(utc_day)
     }
 
-    fn as_utc_millis(&self) -> u64 {
-        self.as_utc_day().as_utc_millis()
+    fn as_millis(&self) -> u64 {
+        self.as_day().as_millis()
     }
 
-    fn from_utc_micros(s: u64) -> Self {
-        let utc_day = UTCDay::from_utc_micros(s);
-        Self::from_utc_day(utc_day)
+    fn from_micros(s: u64) -> Self {
+        let utc_day = UTCDay::from_micros(s);
+        Self::from_day(utc_day)
     }
 
-    fn as_utc_micros(&self) -> u64 {
-        self.as_utc_day().as_utc_micros()
+    fn as_micros(&self) -> u64 {
+        self.as_day().as_micros()
     }
 
-    fn from_utc_nanos(s: u64) -> Self {
-        let utc_day = UTCDay::from_utc_nanos(s);
-        Self::from_utc_day(utc_day)
+    fn from_nanos(s: u64) -> Self {
+        let utc_day = UTCDay::from_nanos(s);
+        Self::from_day(utc_day)
     }
 
-    fn as_utc_nanos(&self) -> u64 {
-        self.as_utc_day().as_utc_nanos()
+    fn as_nanos(&self) -> u64 {
+        self.as_day().as_nanos()
     }
 
-    fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self {
-        let utc_day = UTCDay::from_utc_timestamp(timestamp);
-        Self::from_utc_day(utc_day)
+    fn from_timestamp(timestamp: UTCTimestamp) -> Self {
+        let utc_day = UTCDay::from_timestamp(timestamp);
+        Self::from_day(utc_day)
     }
 
-    fn as_utc_timestamp(&self) -> UTCTimestamp {
-        self.as_utc_day().as_utc_timestamp()
+    fn as_timestamp(&self) -> UTCTimestamp {
+        self.as_day().as_timestamp()
     }
 }
 
 impl From<Duration> for UTCDate {
     fn from(duration: Duration) -> Self {
-        Self::from_utc_duration(duration)
+        Self::from_duration(duration)
     }
 }
 
 impl From<UTCTimestamp> for UTCDate {
     fn from(timestamp: UTCTimestamp) -> Self {
-        Self::from_utc_timestamp(timestamp)
+        Self::from_timestamp(timestamp)
     }
 }
 
 impl From<UTCDay> for UTCDate {
     fn from(utc_day: UTCDay) -> Self {
-        Self::from_utc_day(utc_day)
+        Self::from_day(utc_day)
     }
 }
 
@@ -234,7 +234,7 @@ mod test {
     use crate::time::UTCDay;
 
     #[test]
-    fn test_utc_date_from_components() -> Result<()> {
+    fn test_date_from_components() -> Result<()> {
         let test_cases = [
             (2023, 6, 14, true),   // valid recent date
             (1970, 1, 1, true),    // valid epoch date
@@ -271,7 +271,7 @@ mod test {
     }
 
     #[test]
-    fn test_from_utc_day() -> Result<()> {
+    fn test_from_day() -> Result<()> {
         let test_cases = [
             (UTCDay::from(0), 1970, 1, 1),
             (UTCDay::from(30), 1970, 1, 31),
@@ -280,7 +280,7 @@ mod test {
         ];
 
         for (utc_day, year, month, day) in test_cases {
-            let date = UTCDate::from_utc_day(utc_day);
+            let date = UTCDate::from_day(utc_day);
             let expected = UTCDate { year, month, day };
             assert_eq!(date, expected);
         }
@@ -289,7 +289,7 @@ mod test {
     }
 
     #[test]
-    fn test_to_utc_day() -> Result<()> {
+    fn test_to_day() -> Result<()> {
         let test_cases = [
             (UTCDay::from(0), 1970, 1, 1),
             (UTCDay::from(30), 1970, 1, 31),
@@ -299,7 +299,7 @@ mod test {
 
         for (expected, year, month, day) in test_cases {
             let date = UTCDate::try_from_components(year, month, day)?;
-            let utc_day = date.as_utc_day();
+            let utc_day = date.as_day();
             assert_eq!(utc_day, expected);
         }
 

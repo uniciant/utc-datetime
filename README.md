@@ -46,18 +46,18 @@ See [docs.rs](https://docs.rs/utc-dt) for the API reference.
 
     // UTC Timestamp from a duration
     let utc_timestamp = UTCTimestamp::from(example_duration); // OR
-    let utc_timestamp = UTCTimestamp::from_utc_duration(example_duration);
+    let utc_timestamp = UTCTimestamp::from_duration(example_duration);
     // UTC timestamp from the local system time.
     // Not available for #![no_std]
     let utc_timestamp = UTCTimestamp::try_from_system_time().unwrap();
     // UTC Timestamp from a time measurement (for secs, millis, micros, nanos)
-    let utc_timestamp = UTCTimestamp::from_utc_millis(1686824288903);
+    let utc_timestamp = UTCTimestamp::from_millis(1686824288903);
     // Use UTC Timestamp to get a time measurement since the epoch (for secs, millis, micros, nanos)
-    let utc_millis = utc_timestamp.as_utc_millis();
+    let utc_millis = utc_timestamp.as_millis();
     // Use UTC Timestamp to get time-of-day
     let time_of_day_ns: u64 = utc_timestamp.as_time_of_day_ns();
     // Use UTC Timestamp to get days since epoch (ie. UTC Day)
-    let utc_day: UTCDay = utc_timestamp.as_utc_day();
+    let utc_day: UTCDay = utc_timestamp.as_day();
     // UTC Timestamp from a UTC Day and time-of-day components
     let utc_timestamp = UTCTimestamp::try_from_days_and_nanos(utc_day, time_of_day_ns).unwrap(); // OR
     let utc_timestamp = unsafe { UTCTimestamp::from_days_and_nanos(utc_day, time_of_day_ns) };
@@ -66,13 +66,13 @@ See [docs.rs](https://docs.rs/utc-dt) for the API reference.
     let utc_day = UTCDay::from(19523); // OR
     let utc_day = UTCDay::from_u32(19523);
     // Use UTC Day to get the weekday
-    let weekday = utc_day.as_utc_weekday();
+    let weekday = utc_day.as_weekday();
 
     // UTC Date directly from components
     let utc_date = UTCDate::try_from_components(2023, 6, 15).unwrap(); // OR
     let utc_date = unsafe { UTCDate::from_components(2023, 6, 15) };
     // UTC Date from UTC Day
-    let utc_date = UTCDate::from_utc_day(utc_day);
+    let utc_date = UTCDate::from_day(utc_day);
     // Check whether date occurs within leap year
     let is_leap_year: bool = utc_date.is_leap_year();
     // Get number of days within date's month
@@ -81,7 +81,7 @@ See [docs.rs](https://docs.rs/utc-dt) for the API reference.
     let (year, month, day) = (utc_date.as_year(), utc_date.as_month(), utc_date.as_day()); // OR
     let (year, month, day) = utc_date.as_components();
     // UTC Day from UTC Date
-    let utc_day = utc_date.as_utc_day();
+    let utc_day = utc_date.as_day();
     // Get date string formatted according to ISO 8601 `(YYYY-MM-DD)`
     // Not available for #![no_std]
     let iso_date = utc_date.as_iso_date();
@@ -121,19 +121,19 @@ See [docs.rs](https://docs.rs/utc-dt) for the API reference.
 
         // Example shortcuts using `UTCTransformations`
         // UTC Day / UTC Date / UTC Datetime from a duration
-        let utc_day = UTCDay::from_utc_duration(example_duration); // OR
+        let utc_day = UTCDay::from_duration(example_duration); // OR
         let utc_day = UTCDay::from(example_duration);
-        let utc_date = UTCDate::from_utc_duration(example_duration); // OR
+        let utc_date = UTCDate::from_duration(example_duration); // OR
         let utc_date = UTCDate::from(example_duration);
-        let utc_datetime = UTCDatetime::from_utc_duration(example_duration); // OR
+        let utc_datetime = UTCDatetime::from_duration(example_duration); // OR
         let utc_datetime = UTCDatetime::from(example_duration);
 
         // UTC Day / UTC Date / UTC Datetime from a timestamp
-        let utc_day = UTCDay::from_utc_timestamp(utc_timestamp); // OR
+        let utc_day = UTCDay::from_timestamp(utc_timestamp); // OR
         let utc_day = UTCDay::from(utc_timestamp);
-        let utc_date = UTCDate::from_utc_timestamp(utc_timestamp); // OR
+        let utc_date = UTCDate::from_timestamp(utc_timestamp); // OR
         let utc_date = UTCDate::from(utc_timestamp);
-        let utc_datetime = UTCDatetime::from_utc_timestamp(utc_timestamp); // OR
+        let utc_datetime = UTCDatetime::from_timestamp(utc_timestamp); // OR
         let utc_datetime = UTCDatetime::from(utc_timestamp);
 
         // UTC Day / UTC Date / UTC Datetime from local system time
@@ -143,17 +143,17 @@ See [docs.rs](https://docs.rs/utc-dt) for the API reference.
         let utc_datetime = UTCDatetime::try_from_system_time().unwrap();
 
         // UTC Day / UTC Date / UTC Datetime from u64 epoch measurements
-        let utc_day = UTCDay::from_utc_secs(1686824288);
-        let utc_date = UTCDate::from_utc_millis(1686824288_000);
-        let utc_datetime = UTCDate::from_utc_micros(1686824288_000_000);
+        let utc_day = UTCDay::from_secs(1686824288);
+        let utc_date = UTCDate::from_millis(1686824288_000);
+        let utc_datetime = UTCDate::from_micros(1686824288_000_000);
 
         // Convert from UTC Day / UTC Date / UTC Datetime back to various types
-        let utc_duration: Duration = utc_day.as_utc_duration();
-        let utc_timestamp: UTCTimestamp = utc_date.as_utc_timestamp();
-        let utc_secs: u64 = utc_date.as_utc_secs();
-        let utc_millis: u64 = utc_datetime.as_utc_millis();
-        let utc_micros: u64 = utc_day.as_utc_micros();
-        let utc_nanos: u64 = utc_date.as_utc_nanos();
+        let utc_duration: Duration = utc_day.as_duration();
+        let utc_timestamp: UTCTimestamp = utc_date.as_timestamp();
+        let utc_secs: u64 = utc_date.as_secs();
+        let utc_millis: u64 = utc_datetime.as_millis();
+        let utc_micros: u64 = utc_day.as_micros();
+        let utc_nanos: u64 = utc_date.as_nanos();
     }
 ```
 

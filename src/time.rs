@@ -43,20 +43,20 @@ impl UTCTimestamp {
     /// Create UTC Timestamp from a duration.
     /// Constant evaluation alternative to `From<Duration>`.
     #[inline]
-    pub const fn from_utc_duration(d: Duration) -> Self {
+    pub const fn from_duration(d: Duration) -> Self {
         Self(d)
     }
 
     /// UTC Timestamp as internal Duration since the Unix Epoch.
     #[inline]
-    pub const fn as_utc_duration(&self) -> Duration {
+    pub const fn as_duration(&self) -> Duration {
         self.0
     }
 
     /// Consume UTC Timestamp into the internal Duration since the Unix Epoch.
     /// Constant evaluation alternative to `Into<Duration>`.
     #[inline]
-    pub const fn to_utc_duration(self) -> Duration {
+    pub const fn to_duration(self) -> Duration {
         self.0
     }
 
@@ -69,55 +69,55 @@ impl UTCTimestamp {
 
     /// Get the number of UTC days since the Unix Epoch.
     #[inline]
-    pub const fn as_utc_day(&self) -> UTCDay {
+    pub const fn as_day(&self) -> UTCDay {
         UTCDay((self.0.as_secs() / SECONDS_PER_DAY) as u32)
     }
 
     /// Create UTC Timestamp from seconds since the Unix Epoch.
     #[inline]
-    pub const fn from_utc_secs(s: u64) -> Self {
+    pub const fn from_secs(s: u64) -> Self {
         UTCTimestamp(Duration::from_secs(s))
     }
 
     /// Convert to seconds measured from the Unix Epoch.
     #[inline]
-    pub const fn as_utc_secs(&self) -> u64 {
+    pub const fn as_secs(&self) -> u64 {
         self.0.as_secs()
     }
 
     /// Create UTC Timestamp from milliseconds since the Unix Epoch.
     #[inline]
-    pub const fn from_utc_millis(ms: u64) -> Self {
+    pub const fn from_millis(ms: u64) -> Self {
         UTCTimestamp(Duration::from_millis(ms))
     }
 
     /// Convert to milliseconds measured from the Unix Epoch.
     #[inline]
-    pub const fn as_utc_millis(&self) -> u64 {
+    pub const fn as_millis(&self) -> u64 {
         self.0.as_millis() as u64
     }
 
     /// Create UTC Timestamp from microseconds since the Unix Epoch.
     #[inline]
-    pub const fn from_utc_micros(us: u64) -> Self {
+    pub const fn from_micros(us: u64) -> Self {
         UTCTimestamp(Duration::from_micros(us))
     }
 
     /// Convert to microseconds measured from the Unix Epoch.
     #[inline]
-    pub const fn as_utc_micros(&self) -> u64 {
+    pub const fn as_micros(&self) -> u64 {
         self.0.as_micros() as u64
     }
 
     /// Create UTC Timestamp from nanoseconds since the Unix Epoch.
     #[inline]
-    pub const fn from_utc_nanos(ns: u64) -> Self {
+    pub const fn from_nanos(ns: u64) -> Self {
         UTCTimestamp(Duration::from_nanos(ns))
     }
 
     /// Convert to seconds measured from the Unix Epoch.
     #[inline]
-    pub const fn as_utc_nanos(&self) -> u64 {
+    pub const fn as_nanos(&self) -> u64 {
         self.0.as_nanos() as u64
     }
 }
@@ -136,80 +136,80 @@ where
 {
     /// Create from a duration measured from the Unix Epoch.
     #[inline]
-    fn from_utc_duration(duration: Duration) -> Self {
+    fn from_duration(duration: Duration) -> Self {
         let timestamp = UTCTimestamp(duration);
-        Self::from_utc_timestamp(timestamp)
+        Self::from_timestamp(timestamp)
     }
 
     /// Convert to a duration measured from the Unix Epoch.
     #[inline]
-    fn as_utc_duration(&self) -> Duration {
-        self.as_utc_timestamp().as_utc_duration()
+    fn as_duration(&self) -> Duration {
+        self.as_timestamp().as_duration()
     }
 
     /// Create from seconds measured from the Unix Epoch.
     #[inline]
-    fn from_utc_secs(s: u64) -> Self {
-        let timestamp = UTCTimestamp::from_utc_secs(s);
-        Self::from_utc_timestamp(timestamp)
+    fn from_secs(s: u64) -> Self {
+        let timestamp = UTCTimestamp::from_secs(s);
+        Self::from_timestamp(timestamp)
     }
 
     /// Convert to seconds measured from the Unix Epoch.
     #[inline]
-    fn as_utc_secs(&self) -> u64 {
-        self.as_utc_timestamp().as_utc_secs()
+    fn as_secs(&self) -> u64 {
+        self.as_timestamp().as_secs()
     }
 
     /// Create from milliseconds measured from the Unix Epoch.
     #[inline]
-    fn from_utc_millis(ms: u64) -> Self {
-        let timestamp = UTCTimestamp::from_utc_millis(ms);
-        Self::from_utc_timestamp(timestamp)
+    fn from_millis(ms: u64) -> Self {
+        let timestamp = UTCTimestamp::from_millis(ms);
+        Self::from_timestamp(timestamp)
     }
 
     /// Convert to milliseconds measured from the Unix Epoch.
     #[inline]
-    fn as_utc_millis(&self) -> u64 {
-        self.as_utc_timestamp().as_utc_millis()
+    fn as_millis(&self) -> u64 {
+        self.as_timestamp().as_millis()
     }
 
     /// Create from microseconds measured from the Unix Epoch.
     #[inline]
-    fn from_utc_micros(us: u64) -> Self {
-        let timestamp = UTCTimestamp::from_utc_micros(us);
-        Self::from_utc_timestamp(timestamp)
+    fn from_micros(us: u64) -> Self {
+        let timestamp = UTCTimestamp::from_micros(us);
+        Self::from_timestamp(timestamp)
     }
 
     /// Convert to microseconds measured from the Unix Epoch.
     #[inline]
-    fn as_utc_micros(&self) -> u64 {
-        self.as_utc_timestamp().as_utc_micros()
+    fn as_micros(&self) -> u64 {
+        self.as_timestamp().as_micros()
     }
 
     /// Create from nanoseconds measured from the Unix Epoch.
     #[inline]
-    fn from_utc_nanos(ms: u64) -> Self {
-        let timestamp = UTCTimestamp::from_utc_nanos(ms);
-        Self::from_utc_timestamp(timestamp)
+    fn from_nanos(ms: u64) -> Self {
+        let timestamp = UTCTimestamp::from_nanos(ms);
+        Self::from_timestamp(timestamp)
     }
 
     /// Convert to nanoseconds measured from the Unix Epoch.
     #[inline]
-    fn as_utc_nanos(&self) -> u64 {
-        self.as_utc_timestamp().as_utc_nanos()
+    fn as_nanos(&self) -> u64 {
+        self.as_timestamp().as_nanos()
     }
 
     /// Create from local system time
     #[cfg(feature = "std")]
     fn try_from_system_time() -> Result<Self> {
         let timestamp = UTCTimestamp::try_from_system_time()?;
-        Ok(Self::from_utc_timestamp(timestamp))
+        Ok(Self::from_timestamp(timestamp))
     }
 
     /// Create from a UTC timestamp.
-    fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self;
+    fn from_timestamp(timestamp: UTCTimestamp) -> Self;
     /// Convert to a UTC timestamp.
-    fn as_utc_timestamp(&self) -> UTCTimestamp;
+    fn as_timestamp(&self) -> UTCTimestamp;
 }
 
 #[derive(
@@ -259,59 +259,59 @@ impl UTCDay {
     ///
     /// Reference:
     /// <http://howardhinnant.github.io/date_algorithms.html#weekday_from_days>
-    pub fn as_utc_weekday(&self) -> u8 {
+    pub fn as_weekday(&self) -> u8 {
         ((self.0 as u64 + 4) % 7) as u8
     }
 }
 
 impl UTCTransformations for UTCDay {
     #[inline]
-    fn from_utc_secs(s: u64) -> Self {
+    fn from_secs(s: u64) -> Self {
         Self((s / SECONDS_PER_DAY) as u32)
     }
 
     #[inline]
-    fn as_utc_secs(&self) -> u64 {
+    fn as_secs(&self) -> u64 {
         (self.0 as u64) * SECONDS_PER_DAY
     }
 
     #[inline]
-    fn from_utc_millis(ms: u64) -> Self {
+    fn from_millis(ms: u64) -> Self {
         Self((ms / MILLIS_PER_DAY) as u32)
     }
 
     #[inline]
-    fn as_utc_millis(&self) -> u64 {
+    fn as_millis(&self) -> u64 {
         (self.0 as u64) * MILLIS_PER_DAY
     }
 
     #[inline]
-    fn from_utc_micros(us: u64) -> Self {
+    fn from_micros(us: u64) -> Self {
         Self((us / MICROS_PER_DAY) as u32)
     }
 
     #[inline]
-    fn as_utc_micros(&self) -> u64 {
+    fn as_micros(&self) -> u64 {
         (self.0 as u64) * MICROS_PER_DAY
     }
 
     #[inline]
-    fn from_utc_nanos(ns: u64) -> Self {
+    fn from_nanos(ns: u64) -> Self {
         Self((ns / NANOS_PER_DAY) as u32)
     }
 
     #[inline]
-    fn as_utc_nanos(&self) -> u64 {
+    fn as_nanos(&self) -> u64 {
         (self.0 as u64) * NANOS_PER_DAY
     }
 
     #[inline]
-    fn from_utc_timestamp(timestamp: UTCTimestamp) -> Self {
-        timestamp.as_utc_day()
+    fn from_timestamp(timestamp: UTCTimestamp) -> Self {
+        timestamp.as_day()
     }
 
     #[inline]
-    fn as_utc_timestamp(&self) -> UTCTimestamp {
+    fn as_timestamp(&self) -> UTCTimestamp {
         UTCTimestamp::from_day(*self)
     }
 }
@@ -319,14 +319,14 @@ impl UTCTransformations for UTCDay {
 impl From<Duration> for UTCDay {
     #[inline]
     fn from(duration: Duration) -> Self {
-        Self::from_utc_duration(duration)
+        Self::from_duration(duration)
     }
 }
 
 impl From<UTCTimestamp> for UTCDay {
     #[inline]
     fn from(timestamp: UTCTimestamp) -> Self {
-        Self::from_utc_timestamp(timestamp)
+        Self::from_timestamp(timestamp)
     }
 }
 
@@ -497,33 +497,33 @@ mod test {
     #[test]
     fn test_from_days_and_nanos() -> Result<()> {
         let test_cases = [
-            (UTCTimestamp::from_utc_nanos(0), UTCDay::from_u32(0), UTCTimeOfDay::try_from_secs(0)?, 4),
+            (UTCTimestamp::from_nanos(0), UTCDay::from_u32(0), UTCTimeOfDay::try_from_secs(0)?, 4),
             (
-                UTCTimestamp::from_utc_nanos(123456789),
+                UTCTimestamp::from_nanos(123456789),
                 UTCDay::from_u32(0),
                 UTCTimeOfDay::try_from_nanos(123456789)?,
                 4,
             ),
             (
-                UTCTimestamp::from_utc_millis(1686756677000),
+                UTCTimestamp::from_millis(1686756677000),
                 UTCDay::from_u32(19522),
                 UTCTimeOfDay::try_from_nanos(55_877_000_000_000)?,
                 3,
             ),
             (
-                UTCTimestamp::from_utc_millis(1709220677000),
+                UTCTimestamp::from_millis(1709220677000),
                 UTCDay::from_u32(19782),
                 UTCTimeOfDay::try_from_micros(55_877_000_000)?,
                 4,
             ),
             (
-                UTCTimestamp::from_utc_millis(1677684677000),
+                UTCTimestamp::from_millis(1677684677000),
                 UTCDay::from_u32(19417),
                 UTCTimeOfDay::try_from_millis(55_877_000)?,
                 3,
             ),
             (
-                UTCTimestamp::from_utc_duration(Duration::new(
+                UTCTimestamp::from_duration(Duration::new(
                     (((u32::MAX as u64) + 1) * SECONDS_PER_DAY) - 1,
                     (NANOS_PER_SECOND - 1) as u32,
                 )),
@@ -536,9 +536,9 @@ mod test {
         for (expected_timestamp, utc_days, tod, weekday) in test_cases {
             let timestamp = UTCTimestamp::from_day_and_tod(utc_days, tod);
             assert_eq!(timestamp, expected_timestamp);
-            assert_eq!(UTCDay::from_utc_timestamp(timestamp), utc_days);
+            assert_eq!(UTCDay::from_timestamp(timestamp), utc_days);
             assert_eq!(timestamp.as_tod(), tod);
-            assert_eq!(utc_days.as_utc_weekday(), weekday);
+            assert_eq!(utc_days.as_weekday(), weekday);
         }
 
         Ok(())
