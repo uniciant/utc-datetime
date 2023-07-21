@@ -7,7 +7,7 @@ use core::time::Duration;
 #[cfg(feature = "std")]
 use std::time::SystemTime;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Result, bail};
 use derive_more::{Add, Div, From, Into, Mul, Sub};
 
 use crate::constants::*;
@@ -409,10 +409,10 @@ impl UTCTimeOfDay {
     /// Try to create UTC time of day from nanoseconds
     pub fn try_from_nanos(ns: u64) -> Result<Self> {
         if ns >= NANOS_PER_DAY {
-            return Err(anyhow!(
+            bail!(
                 "Nanoseconds not within a day! (ns: {})",
                 ns
-            ));
+            );
         }
         Ok(Self(ns))
     }

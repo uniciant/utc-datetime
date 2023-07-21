@@ -6,7 +6,7 @@
 
 use core::time::Duration;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, bail};
 
 use crate::time::{UTCDay, UTCTimestamp, UTCTransformations};
 
@@ -36,18 +36,18 @@ impl UTCDate {
         let date = unsafe { Self::from_components_unchecked(year, month, day) };
         // then check
         if date.year < 1970 {
-            return Err(anyhow!("Year out of range! (year: {:04})", year));
+            bail!("Year out of range! (year: {:04})", year);
         }
         if date.month == 0 || date.month > 12 {
-            return Err(anyhow!("Month out of range! (month: {:02})", month));
+            bail!("Month out of range! (month: {:02})", month);
         }
         if date.day == 0 || date.day > date.days_in_month() {
-            return Err(anyhow!(
+            bail!(
                 "Day out of range! (day: {:02}) (yyyy-mm: {:04}-{:02})",
                 day,
                 month,
                 year
-            ));
+            );
         }
         Ok(date)
     }
@@ -228,7 +228,7 @@ impl From<UTCDay> for UTCDate {
 
 #[cfg(test)]
 mod test {
-    use anyhow::{anyhow, Result};
+    use anyhow::{Result, bail};
 
     use crate::date::UTCDate;
     use crate::time::UTCDay;
@@ -251,12 +251,12 @@ mod test {
             match UTCDate::try_from_components(year, month, day) {
                 Ok(_) => {
                     if !case_is_valid {
-                        return Err(anyhow!(
+                        bail!(
                             "Case passed unexpectedly. (date: {:04}-{:02}-{:02})",
                             year,
                             month,
                             day
-                        ));
+                        );
                     }
                 }
                 Err(e) => {

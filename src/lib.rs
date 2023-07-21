@@ -180,7 +180,7 @@ pub mod constants;
 
 use core::time::Duration;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Result, bail};
 
 use date::UTCDate;
 use time::{UTCTimestamp, UTCTransformations, UTCTimeOfDay};
@@ -301,7 +301,7 @@ impl UTCDatetime {
             let subsec_str = &rem[1..(rem_len - 1)]; // "nnn"
             let precision: u32 = subsec_str.len() as u32;
             if precision > 9 {
-                return Err(anyhow!("Cannot parse ISO datetime: Precision ({}) exceeds maximum of 9", precision));
+                bail!("Cannot parse ISO datetime: Precision ({}) exceeds maximum of 9", precision);
             }
             if precision == 0 {
                 0
