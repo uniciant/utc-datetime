@@ -193,8 +193,26 @@ use date::UTCDate;
 use time::{UTCTimestamp, UTCTransformations, UTCTimeOfDay};
 
 /// UTC Datetime.
+///
 /// A UTC Datetime consists of a date component and a time-of-day component
 /// with nanosecond resolution.
+///
+/// ## Examples
+/// ```rust,ignore
+/// // UTC Datetime from date and time-of-day components
+/// let utc_datetime = UTCDatetime::from_components(utc_date, utc_tod);
+/// // Get date and time-of-day components
+/// let (utc_date, time_of_day_ns) = (utc_datetime.as_date(), utc_datetime.as_tod()); // OR
+/// let (utc_date, time_of_day_ns) = utc_datetime.as_components();
+/// // Parse a UTC Datetime from an ISO 8601 datetime string `(YYYY-MM-DDThh:mm:ssZ)`
+/// let utc_datetime = UTCDatetime::try_from_iso_datetime("2023-06-15T10:18:08.903Z").unwrap();
+/// // Get UTC datetime string formatted according to ISO 8601 `(YYYY-MM-DDThh:mm:ssZ)`
+/// // Not available for #![no_std]
+/// let precision = None;
+/// let iso_datetime = utc_datetime.as_iso_datetime(precision);
+/// assert_eq!(iso_datetime, "2023-06-15T10:18:08Z");
+/// ```
+///
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct UTCDatetime {
     date: UTCDate,

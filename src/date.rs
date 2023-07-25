@@ -11,7 +11,35 @@ use anyhow::{Result, bail};
 use crate::time::{UTCDay, UTCTimestamp, UTCTransformations};
 
 /// UTC Date.
+///
 /// A UTC Date is any calendar date since the Unix epoch date (inclusive).
+///
+/// ## Examples
+/// ```rust,ignore
+/// // UTC Date directly from components
+/// let utc_date = UTCDate::try_from_components(2023, 6, 15).unwrap(); // OR
+/// let utc_date = unsafe { UTCDate::from_components_unchecked(2023, 6, 15) };
+/// // UTC Date from UTC Day
+/// let utc_date = UTCDate::from_day(utc_day);
+/// // Check whether date occurs within leap year
+/// let is_leap_year: bool = utc_date.is_leap_year();
+/// // Get number of days within date's month
+/// let days_in_month: u8 = utc_date.days_in_month();
+/// // Get the date in integer forms
+/// let (year, month, day) = utc_date.as_components();
+/// // UTC Day from UTC Date
+/// let utc_day = utc_date.as_day();
+/// // Parse a UTC Date from an ISO 8601 date string `(YYYY-MM-DD)`
+/// let utc_date = UTCDate::try_from_iso_date("2023-06-15").unwrap();
+/// // Get date string formatted according to ISO 8601 `(YYYY-MM-DD)`
+/// // Not available for #![no_std]
+/// let iso_date = utc_date.as_iso_date();
+/// assert_eq!(iso_date, "2023-06-15");
+/// ```
+///
+/// ## Safety
+/// Unchecked methods are provided for use in hot paths requiring high levels of optimisation.
+/// These methods assume valid input.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct UTCDate {
     year: u32,

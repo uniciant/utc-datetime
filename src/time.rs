@@ -13,7 +13,34 @@ use derive_more::{Add, Div, From, Into, Mul, Sub};
 use crate::constants::*;
 
 /// UTC Timestamp.
+///
 /// A UTC Timestamp is a Duration since the Unix Epoch.
+///
+/// ## Examples
+/// ```rust,ignore
+/// // An example duration.
+/// // When a duration is used, it is assumed to be relative to the unix epoch.
+/// // Thursday, 15 June 2023 10:18:08.903
+/// let example_duration = Duration::from_millis(1686824288903);
+///
+/// // UTC Timestamp from a duration
+/// let utc_timestamp = UTCTimestamp::from(example_duration); // OR
+/// let utc_timestamp = UTCTimestamp::from_duration(example_duration);
+/// // UTC timestamp from the local system time.
+/// // Not available for #![no_std]
+/// let utc_timestamp = UTCTimestamp::try_from_system_time().unwrap();
+/// // UTC Timestamp from a time measurement (for secs, millis, micros, nanos)
+/// let utc_timestamp = UTCTimestamp::from_millis(1686824288903);
+/// // Use UTC Timestamp to get a time measurement since the epoch (for secs, millis, micros, nanos)
+/// let utc_millis = utc_timestamp.as_millis();
+/// // Use UTC Timestamp to get time-of-day
+/// let utc_tod: UTCTimeOfDay = utc_timestamp.as_tod();
+/// // Use UTC Timestamp to get days since epoch (ie. UTC Day)
+/// let utc_day: UTCDay = utc_timestamp.as_day();
+/// // UTC Timestamp from UTC Day and time-of-day components
+/// let utc_timestamp = UTCTimestamp::from_day_and_tod(utc_day, utc_tod);
+/// ```
+///
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, From, Into)]
 pub struct UTCTimestamp(Duration);
 
@@ -130,6 +157,46 @@ impl From<UTCDay> for UTCTimestamp {
 }
 
 /// Common methods for creating and converting between UTC structures.
+///
+/// ## Examples
+/// ```rust,ignore
+/// // Example shortcuts using `UTCTransformations`
+/// // UTC Day / UTC Date / UTC Datetime from a duration
+/// let utc_day = UTCDay::from_duration(example_duration); // OR
+/// let utc_day = UTCDay::from(example_duration);
+/// let utc_date = UTCDate::from_duration(example_duration); // OR
+/// let utc_date = UTCDate::from(example_duration);
+/// let utc_datetime = UTCDatetime::from_duration(example_duration); // OR
+/// let utc_datetime = UTCDatetime::from(example_duration);
+///
+/// // UTC Day / UTC Date / UTC Datetime from a timestamp
+/// let utc_day = UTCDay::from_timestamp(utc_timestamp); // OR
+/// let utc_day = UTCDay::from(utc_timestamp);
+/// let utc_date = UTCDate::from_timestamp(utc_timestamp); // OR
+/// let utc_date = UTCDate::from(utc_timestamp);
+/// let utc_datetime = UTCDatetime::from_timestamp(utc_timestamp); // OR
+/// let utc_datetime = UTCDatetime::from(utc_timestamp);
+///
+/// // UTC Day / UTC Date / UTC Datetime from local system time
+/// // Not available for #![no_std]
+/// let utc_day = UTCDay::try_from_system_time().unwrap();
+/// let utc_date = UTCDate::try_from_system_time().unwrap();
+/// let utc_datetime = UTCDatetime::try_from_system_time().unwrap();
+///
+/// // UTC Day / UTC Date / UTC Datetime from u64 epoch measurements
+/// let utc_day = UTCDay::from_secs(1686824288);
+/// let utc_date = UTCDate::from_millis(1686824288_000);
+/// let utc_datetime = UTCDate::from_micros(1686824288_000_000);
+///
+/// // Convert from UTC Day / UTC Date / UTC Datetime back to various types
+/// let utc_duration: Duration = utc_day.as_duration();
+/// let utc_timestamp: UTCTimestamp = utc_date.as_timestamp();
+/// let utc_secs: u64 = utc_date.as_secs();
+/// let utc_millis: u64 = utc_datetime.as_millis();
+/// let utc_micros: u64 = utc_day.as_micros();
+/// let utc_nanos: u64 = utc_date.as_nanos();
+/// ```
+///
 pub trait UTCTransformations
 where
     Self: Sized,
@@ -212,6 +279,19 @@ where
     fn as_timestamp(&self) -> UTCTimestamp;
 }
 
+/// UTC Day count.
+///
+/// UTC Day is equal to the number of days since the Unix Epoch.
+///
+/// ## Examples
+/// ```rust,ignore
+/// // UTC Day from an integer
+/// let utc_day = UTCDay::from(19523); // OR
+/// let utc_day = UTCDay::from_u32(19523);
+/// // Use UTC Day to get the weekday
+/// let weekday = utc_day.as_weekday();
+/// ```
+///
 #[derive(
     Debug,
     Clone,
@@ -229,8 +309,6 @@ where
     From,
     Into,
 )]
-/// UTC Day count.
-/// UTC Days is the number of days since the Unix Epoch.
 pub struct UTCDay(u32);
 
 impl UTCDay {
@@ -330,6 +408,36 @@ impl From<UTCTimestamp> for UTCDay {
     }
 }
 
+/// UTC Time of Day
+///
+/// A time of day measurement with nanosecond resolution.
+///
+/// ## Examples
+/// ```rust,ignore
+/// // UTC Time of Day from a time measurement (for secs, millis, micros, nanos)
+/// let utc_tod = UTCTimeOfDay::try_from_millis(37088903).unwrap(); // OR
+/// let utc_tod = unsafe { UTCTimeOfDay::from_millis_unchecked(37088903) };
+/// // UTC Time of Day from hours, minutes, seconds and subseconds
+/// let utc_tod = UTCTimeOfDay::try_from_hhmmss(10, 18, 08, 903_000_000).unwrap(); // OR
+/// let utc_tod = unsafe { UTCTimeOfDay::from_hhmmss_unchecked(10, 18, 08, 903_000_000) };
+/// // UTC Time of Day as a time measurement (for secs, millis, micros, nanos)
+/// let utc_tod_us = utc_tod.as_micros();
+/// // UTC Time of Day as hours, minutes and seconds
+/// let (hrs, mins, secs) = utc_tod.as_hhmmss();
+/// // UTC Time of Day subsecond component (in nanoseconds)
+/// let subsec_ns = utc_tod.as_subsec_ns();
+/// // Parse a UTC Time of Day from an ISO 8601 time string `(Thh:mm:ssZ)`
+/// let utc_tod = UTCTimeOfDay::try_from_iso_tod("T10:18:08.903Z").unwrap();
+/// // Get a time of day string formatted according to ISO 8601 `(Thh:mm:ssZ)`
+/// // Not available for #![no_std]
+/// let precision = Some(6);
+/// let iso_tod = utc_tod.as_iso_tod(precision);
+/// assert_eq!(iso_tod, "T10:18:08.903000Z");
+/// ```
+///
+/// ## Safety
+/// Unchecked methods are provided for use in hot paths requiring high levels of optimisation.
+/// These methods assume valid input.
 #[derive(
     Debug,
     Clone,
@@ -345,7 +453,6 @@ impl From<UTCTimestamp> for UTCDay {
     Mul,
     Div,
 )]
-/// UTC Time of Day
 pub struct UTCTimeOfDay(u64);
 
 impl UTCTimeOfDay {
@@ -468,7 +575,7 @@ impl UTCTimeOfDay {
 
     /// Time of day as hours, minutes and seconds (hhmmss) components
     ///
-    /// Returns tuple `(hrs: u8, mins: u8, secs: u8, subsec_ns: u32)`
+    /// Returns tuple `(hrs: u8, mins: u8, secs: u8)`
     pub const fn as_hhmmss(&self) -> (u8, u8, u8) {
         let hrs = (self.0 / NANOS_PER_HOUR) as u8;
         let mins = ((self.0 % NANOS_PER_HOUR) / NANOS_PER_MINUTE) as u8;
