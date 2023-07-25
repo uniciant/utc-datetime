@@ -37,11 +37,13 @@ See [docs.rs](https://docs.rs/utc-dt) for the API reference.
     use utc_dt::time::{
         UTCTimestamp,
         UTCDay,
+        UTCTimeOfDay,
     };
     use utc_dt::date::UTCDate;
 
     // An example duration.
     // When a duration is used, it is assumed to be relative to the unix epoch.
+    // Thursday, 15 June 2023 10:18:08.903
     let example_duration = Duration::from_millis(1686824288903);
 
     // UTC Timestamp from a duration
@@ -55,12 +57,11 @@ See [docs.rs](https://docs.rs/utc-dt) for the API reference.
     // Use UTC Timestamp to get a time measurement since the epoch (for secs, millis, micros, nanos)
     let utc_millis = utc_timestamp.as_millis();
     // Use UTC Timestamp to get time-of-day
-    let time_of_day_ns: u64 = utc_timestamp.as_time_of_day_ns();
+    let utc_tod: UTCTimeOfDay = utc_timestamp.as_tod();
     // Use UTC Timestamp to get days since epoch (ie. UTC Day)
     let utc_day: UTCDay = utc_timestamp.as_day();
-    // UTC Timestamp from a UTC Day and time-of-day components
-    let utc_timestamp = UTCTimestamp::try_from_days_and_nanos(utc_day, time_of_day_ns).unwrap(); // OR
-    let utc_timestamp = unsafe { UTCTimestamp::from_days_and_nanos(utc_day, time_of_day_ns) };
+    // UTC Timestamp from UTC Day and time-of-day components
+    let utc_timestamp = UTCTimestamp::from_day_and_tod(utc_day, utc_tod);
 
     // UTC Day from an integer
     let utc_day = UTCDay::from(19523); // OR
@@ -68,9 +69,29 @@ See [docs.rs](https://docs.rs/utc-dt) for the API reference.
     // Use UTC Day to get the weekday
     let weekday = utc_day.as_weekday();
 
+    // UTC Time of Day from a time measurement (for secs, millis, micros, nanos)
+    let utc_tod = UTCTimeOfDay::try_from_millis(37088903).unwrap(); // OR
+    let utc_tod = unsafe { UTCTimeOfDay::from_millis_unchecked(37088903) };
+    // UTC Time of Day from hours, minutes, seconds and subseconds
+    let utc_tod = UTCTimeOfDay::try_from_hhmmss(10, 18, 08, 903_000_000).unwrap(); // OR
+    let utc_tod = unsafe { UTCTimeOfDay::from_hhmmss_unchecked(10, 18, 08, 903_000_000) };
+    // UTC Time of Day as a time measurement (for secs, millis, micros, nanos)
+    let utc_tod_us = utc_tod.as_micros();
+    // UTC Time of Day as hours, minutes and seconds
+    let (hrs, mins, secs) = utc_tod.as_hhmmss();
+    // UTC Time of Day subsecond component (in nanoseconds)
+    let subsec_ns = utc_tod.as_subsec_ns();
+    // Parse a UTC Time of Day from an ISO 8601 time string `(Thh:mm:ssZ)`
+    let utc_tod = UTCTimeOfDay::try_from_iso_tod("T10:18:08.903Z").unwrap();
+    // Get a time of day string formatted according to ISO 8601 `(Thh:mm:ssZ)`
+    // Not available for #![no_std]
+    let precision = Some(6);
+    let iso_tod = utc_tod.as_iso_tod(precision);
+    assert_eq!(iso_tod, "T10:18:08.903000Z");
+
     // UTC Date directly from components
     let utc_date = UTCDate::try_from_components(2023, 6, 15).unwrap(); // OR
-    let utc_date = unsafe { UTCDate::from_components(2023, 6, 15) };
+    let utc_date = unsafe { UTCDate::from_components_unchecked(2023, 6, 15) };
     // UTC Date from UTC Day
     let utc_date = UTCDate::from_day(utc_day);
     // Check whether date occurs within leap year
@@ -78,41 +99,27 @@ See [docs.rs](https://docs.rs/utc-dt) for the API reference.
     // Get number of days within date's month
     let days_in_month: u8 = utc_date.days_in_month();
     // Get the date in integer forms
-    let (year, month, day) = (utc_date.as_year(), utc_date.as_month(), utc_date.as_day()); // OR
     let (year, month, day) = utc_date.as_components();
     // UTC Day from UTC Date
     let utc_day = utc_date.as_day();
+    // Parse a UTC Date from an ISO 8601 date string `(YYYY-MM-DD)`
+    let utc_date = UTCDate::try_from_iso_date("2023-06-15").unwrap();
     // Get date string formatted according to ISO 8601 `(YYYY-MM-DD)`
     // Not available for #![no_std]
     let iso_date = utc_date.as_iso_date();
     assert_eq!(iso_date, "2023-06-15");
 
-    // UTC Datetime directly from raw components
-    let utc_datetime = UTCDatetime::try_from_raw_components(
-        year,
-        month,
-        day,
-        time_of_day_ns
-    ).unwrap(); // OR
-    let utc_datetime = unsafe { UTCDatetime::from_raw_components(
-        year,
-        month,
-        day,
-        time_of_day_ns
-    )};
     // UTC Datetime from date and time-of-day components
-    let utc_datetime = UTCDatetime::try_from_components(utc_date, time_of_day_ns).unwrap(); // OR
-    let utc_datetime = unsafe { UTCDatetime::from_components(utc_date, time_of_day_ns) };
+    let utc_datetime = UTCDatetime::from_components(utc_date, utc_tod);
     // Get date and time-of-day components
-    let (utc_date, time_of_day_ns) = (utc_datetime.as_date(), utc_datetime.as_time_of_day_ns());
+    let (utc_date, time_of_day_ns) = (utc_datetime.as_date(), utc_datetime.as_tod()); // OR
     let (utc_date, time_of_day_ns) = utc_datetime.as_components();
-    // Get the time in hours, minutes and seconds
-    let (hours, minutes, seconds) = utc_datetime.as_hours_minutes_seconds();
-    // Get the sub-second component of the time of day, in nanoseconds
-    let subsec_ns = utc_datetime.as_subsec_ns();
+    // Parse a UTC Datetime from an ISO 8601 datetime string `(YYYY-MM-DDThh:mm:ssZ)`
+    let utc_datetime = UTCDatetime::try_from_iso_datetime("2023-06-15T10:18:08.903Z").unwrap();
     // Get UTC datetime string formatted according to ISO 8601 `(YYYY-MM-DDThh:mm:ssZ)`
-    // Not available with `no_std`
-    let iso_datetime = utc_datetime.as_iso_datetime();
+    // Not available for #![no_std]
+    let precision = None;
+    let iso_datetime = utc_datetime.as_iso_datetime(precision);
     assert_eq!(iso_datetime, "2023-06-15T10:18:08Z");
 
     {
