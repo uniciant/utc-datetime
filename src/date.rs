@@ -4,7 +4,7 @@
 //! proleptic Gregorian Calendar (the *civil* calendar),
 //! to create UTC dates.
 
-use core::time::Duration;
+use core::{time::Duration, cmp::Ordering, fmt::{Display, Formatter}};
 
 use anyhow::{Result, bail};
 
@@ -40,43 +40,87 @@ use crate::time::{UTCDay, UTCTimestamp, UTCTransformations};
 /// ## Safety
 /// Unchecked methods are provided for use in hot paths requiring high levels of optimisation.
 /// These methods assume valid input.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Hash, Default)]
 pub struct UTCDate {
-    year: u32,
+    era: u32,
+    yoe: u16,
     month: u8,
     day: u8,
 }
 
+impl Ord for UTCDate {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if self.era < other.era { return Ordering::Less }
+        if self.era > other.era { return Ordering::Greater }
+        if self.yoe < other.yoe { return Ordering::Less }
+        if self.yoe > other.yoe { return Ordering::Greater }
+        if self.month < other.month { return Ordering::Less }
+        if self.month > other.month { return Ordering::Greater }
+        if self.day < other.day { return Ordering::Less }
+        if self.day > other.day { return Ordering::Greater }
+        Ordering::Equal
+    }
+}
+
+impl Display for UTCDate {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        let (year, month, day) = self.as_components();
+        write!(f, "{:04}-{:02}-{:02}", year, month, day)
+    }
+}
+
 impl UTCDate {
+    /// The minimum UTC Date supported
+    ///
+    /// Equal to the epoch at Jan 1, 1970.
+    pub const MIN: UTCDate = UTCDate { era: 4, yoe: 370, month: 1, day: 1 };
+
+    /// The maximum UTC Date supported.
+    ///
+    /// Equal to `November 9, 584_554_051_223`
+    ///
+    /// Maximum date support is limited by the maximum `UTCTimestamp`.
+    /// UTCDate can physically store dates up to `December 31, 1_717_986_918_399`
+    pub const MAX: UTCDate = UTCDate { era: 1_461_385_128, yoe: 23, month: 11, day: 9 };
+
+    /// The maximum year supported
+    pub const MAX_YEAR: u64 = 584_554_051_223;
+
+    /// The minimum year supported
+    pub const MIN_YEAR: u64 = 1970;
+
     /// Unchecked method to create a UTC Date from provided year, month and day.
     ///
     /// # Safety
     /// Unsafe if the user passes an invalid calendar year, month and day combination.
     /// Invalid inputs are not checked and may cause a panic in other methods.
     #[inline]
-    pub const unsafe fn from_components_unchecked(year: u32, month: u8, day: u8) -> Self {
-        Self { year, month, day }
+    pub const unsafe fn from_components_unchecked(year: u64, month: u8, day: u8) -> Self {
+        let year = year - (month <= 2) as u64;
+        let era = year / 400;
+        let yoe = year - (era * 400);
+        Self { era: era as u32, yoe: yoe as u16, month, day }
     }
 
     /// Try to create a UTC Date from provided year, month and day.
-    pub fn try_from_components(year: u32, month: u8, day: u8) -> Result<Self> {
+    pub fn try_from_components(year: u64, month: u8, day: u8) -> Result<Self> {
+        if year < Self::MIN_YEAR || year > Self::MAX_YEAR {
+            bail!("Year out of range! (year: {:04})", year);
+        }
+        if month == 0 || month > 12 {
+            bail!("Month out of range! (month: {:02})", month);
+        }
         // force create
         let date = unsafe { Self::from_components_unchecked(year, month, day) };
         // then check
-        if date.year < 1970 {
-            bail!("Year out of range! (year: {:04})", year);
-        }
-        if date.month == 0 || date.month > 12 {
-            bail!("Month out of range! (month: {:02})", month);
-        }
         if date.day == 0 || date.day > date.days_in_month() {
-            bail!(
-                "Day out of range! (day: {:02}) (yyyy-mm: {:04}-{:02})",
-                day,
-                month,
-                year
-            );
+            bail!("Day out of range! (date: {date}");
         }
+
+        if date > UTCDate::MAX {
+            bail!("Date out of range! (date: {date}");
+        }
+
         Ok(date)
     }
 
@@ -95,8 +139,7 @@ impl UTCDate {
         let mp = ((5 * doy) + 2) / 153;
         let day = (doy - (((153 * mp) + 2) / 5) + 1) as u8;
         let month = if mp < 10 { mp + 3 } else { mp - 9 } as u8;
-        let year = yoe + era * 400 + (month <= 2) as u32;
-        Self { day, month, year }
+        Self { era, yoe: yoe as u16, month, day }
     }
 
     /// Get the days since the epoch from the UTC Date
@@ -106,31 +149,32 @@ impl UTCDate {
     ///
     /// Simplified for unsigned days/years
     pub const fn as_day(&self) -> UTCDay {
-        let m = self.month as u32;
-        let d = self.day as u32;
-        let y = self.year - ((m <= 2) as u32);
-        let era = y / 400;
-        let yoe = y - era * 400;
+        let m = self.month as u16;
+        let d = self.day as u16;
+        let era = self.era;
+        let yoe = self.yoe as u32;
         let doy = ((153 * (if m > 2 { m - 3 } else { m + 9 }) + 2) / 5) + d - 1;
-        let doe = (yoe * 365) + (yoe / 4) - (yoe / 100) + doy;
+        let doe = (yoe * 365) + (yoe / 4) - (yoe / 100) + doy as u32;
         let days = (era as u64 * 146097)  + doe as u64 - 719468;
         UTCDay::from_u64(days)
     }
 
     /// Get copy of the date components as integers
     ///
-    /// Returns tuple: `(year: u32, month: u8, day: u8)`
+    /// Returns tuple: `(year: u64, month: u8, day: u8)`
     #[inline]
-    pub const fn as_components(&self) -> (u32, u8, u8) {
-        (self.year, self.month, self.day)
+    pub const fn as_components(&self) -> (u64, u8, u8) {
+        let year = self.yoe as u64 + (self.era as u64 * 400) + (self.month <= 2) as u64;
+        (year, self.month, self.day)
     }
 
     /// Consume self into date components as integers
     ///
-    /// Returns tuple: `(year: u32, month: u8, day: u8)`
+    /// Returns tuple: `(year: u64, month: u8, day: u8)`
     #[inline]
-    pub const fn to_components(self) -> (u32, u8, u8) {
-        (self.year, self.month, self.day)
+    pub const fn to_components(self) -> (u64, u8, u8) {
+        let year = self.yoe as u64 + (self.era as u64 * 400) + (self.month <=2) as u64;
+        (year, self.month, self.day)
     }
 
     /// Returns whether date is within a leap year.
@@ -139,7 +183,8 @@ impl UTCDate {
     /// <http://howardhinnant.github.io/date_algorithms.html#is_leap>
     #[inline]
     pub const fn is_leap_year(&self) -> bool {
-        (self.year % 4 == 0) && ((self.year % 100 != 0) || (self.year % 400 == 0))
+        let yoe_adj = self.yoe + (self.month <= 2) as u16;
+        (yoe_adj % 4 == 0) && ((yoe_adj % 100 != 0) || (yoe_adj % 400 == 0))
     }
 
     /// Returns the number of days within the month of the date.
@@ -170,7 +215,7 @@ impl UTCDate {
         let (month_str, rem) = rem[1..].split_at(2); // remainder = "-DD"
         let day_str = &rem[1..];
         // parse
-        let year: u32 = year_str.parse()?;
+        let year: u64 = year_str.parse()?;
         let month: u8 = month_str.parse()?;
         let day: u8 = day_str.parse()?;
         Self::try_from_components(year, month, day)
@@ -183,7 +228,7 @@ impl UTCDate {
     /// <https://www.w3.org/TR/NOTE-datetime>
     #[cfg(feature = "std")]
     pub fn as_iso_date(&self) -> String {
-        format!("{:04}-{:02}-{:02}", self.year, self.month, self.day)
+        format!("{self}")
     }
 }
 
@@ -256,7 +301,7 @@ impl From<UTCDay> for UTCDate {
 mod test {
     use anyhow::{Result, bail};
 
-    use crate::date::UTCDate;
+    use crate::{date::UTCDate, constants::SECONDS_PER_DAY};
 
     #[test]
     fn test_date_from_components() -> Result<()> {
@@ -264,14 +309,15 @@ mod test {
             (2023, 6, 14, true, false, 30),   // valid recent date
             (1970, 1, 1, true, false, 31),    // valid epoch date
             (2024, 2, 29, true, true, 29),   // valid leap day
+            (2024, 3, 1, true, true, 31),   // valid leap year
             (1969, 12, 31, false, false, 31), // invalid before epoch
             (2023, 2, 29, false, false, 28),  // invalid date
             (2023, 0, 10, false, false, 0),  // invalid date, month out of range
             (2023, 13, 10, false, false, 0), // invalid date, month out of range
             (2023, 9, 31, false, false, 30),  // invalid date, day out of range
             (2023, 9, 0, false, false, 30),   // invalid date, day out of range
-            (u32::MAX, 12, 31, true, false, 31), // valid max date
-            (u32::MAX, u8::MAX, u8::MAX, false, false, 0), // invalid max date
+            (UTCDate::MAX_YEAR, 11, 09, true, false, 30), // valid max date
+            (UTCDate::MAX_YEAR, u8::MAX, u8::MAX, false, false, 0), // invalid max date
         ];
 
         for (year, month, day, case_is_valid, is_leap_year, days_in_month) in test_cases {
@@ -307,17 +353,15 @@ mod test {
             (UTCDay::from(30), 1970, 1, 31),
             (UTCDay::from(19522), 2023, 6, 14),
             (UTCDay::from(381112), 3013, 6, 14),
-            (UTCDay::from(1568703873081), u32::MAX, 12, 31),
+            (UTCDay::from(213503982334601), UTCDate::MAX_YEAR, 11, 09),
         ];
 
         for (utc_day, year, month, day) in test_cases {
             let date_from_day = UTCDate::from_day(utc_day);
             let date_from_comp = UTCDate::try_from_components(year, month, day)?;
-            assert_eq!(date_from_day, date_from_comp);
-
             let day_from_date = date_from_comp.as_day();
+            assert_eq!(date_from_day, date_from_comp);
             assert_eq!(utc_day, day_from_date);
-
             assert_eq!((year, month, day), date_from_comp.as_components());
             assert_eq!((year, month, day), date_from_comp.to_components());
         }
@@ -331,13 +375,13 @@ mod test {
             (2023, 6, 14, true, "2023-06-14"),   // valid recent date
             (1970, 1, 1, true, "1970-01-01"),    // valid epoch date
             (2024, 2, 29, true, "2024-02-29"),   // valid leap day
+            (2000, 2, 29, true, "2000-02-29"),   // valid leap day
             (1969, 12, 31, false, "1969-12-31"), // invalid before epoch
             (2023, 2, 29, false, "2023-02-29"),  // invalid date
             (2023, 0, 10, false, "2023-00-10"),  // invalid date, month out of range
             (2023, 13, 10, false, "2023-13-10"), // invalid date, month out of range
             (2023, 9, 31, false, "2023-09-31"),  // invalid date, day out of range
             (2023, 9, 0, false, "2023-09-00"),   // invalid date, day out of range
-            (u32::MAX, 12, 31, false, "4294967295-12-31"), // valid last date, iso date out of range
         ];
 
         for (year, month, day, case_is_valid, iso_date) in test_cases {
@@ -378,15 +422,15 @@ mod test {
             (UTCTimestamp::from_secs(1686700800), 2023, 6, 14),
             (UTCTimestamp::from_secs(32928076800), 3013, 6, 14),
             (UTCTimestamp::from_secs(371085174288000), 11761191, 1, 20),
-            (UTCTimestamp::from_secs(135536014634198400), u32::MAX, 12, 31),
-            (UTCTimestamp::from_secs(135536014634198400), u32::MAX, 12, 31),
+            (UTCTimestamp::from_secs(u64::MAX - u64::MAX % SECONDS_PER_DAY), 584554051223, 11, 9),
         ];
 
         for (timestamp, year, month, day) in test_cases {
-            let date = UTCDate::try_from_components(year, month, day)?;
-
-            assert_eq!(timestamp, date.as_timestamp());
-            assert_eq!(UTCDate::from_timestamp(timestamp), date);
+            let date_from_components = UTCDate::try_from_components(year, month, day)?;
+            let timestamp_from_date = date_from_components.as_timestamp();
+            let date_from_timestamp = UTCDate::from_timestamp(timestamp);
+            assert_eq!(date_from_timestamp, date_from_components);
+            assert_eq!(timestamp, timestamp_from_date);
         }
 
         Ok(())
