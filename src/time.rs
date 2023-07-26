@@ -97,7 +97,7 @@ impl UTCTimestamp {
     /// Get the number of UTC days since the Unix Epoch.
     #[inline]
     pub const fn as_day(&self) -> UTCDay {
-        UTCDay((self.0.as_secs() / SECONDS_PER_DAY) as u32)
+        UTCDay(self.0.as_secs() / SECONDS_PER_DAY)
     }
 
     /// Create UTC Timestamp from seconds since the Unix Epoch.
@@ -309,26 +309,26 @@ where
     From,
     Into,
 )]
-pub struct UTCDay(u32);
+pub struct UTCDay(u64);
 
 impl UTCDay {
     /// Create UTC Day from integer.
-    /// Const evaluation alternative to `From<u32>`
+    /// Const evaluation alternative to `From<u64>`
     #[inline]
-    pub const fn from_u32(u: u32) -> Self {
+    pub const fn from_u64(u: u64) -> Self {
         Self(u)
     }
 
     /// UTC Day as internal integer
     #[inline]
-    pub const fn as_u32(&self) -> u32 {
+    pub const fn as_u64(&self) -> u64 {
         self.0
     }
 
     /// Consume UTC Day to internal integer
-    /// Const evaluation alternative to `Into<u32>`
+    /// Const evaluation alternative to `Into<u64>`
     #[inline]
-    pub const fn to_u32(self) -> u32 {
+    pub const fn to_u64(self) -> u64 {
         self.0
     }
 
@@ -345,42 +345,42 @@ impl UTCDay {
 impl UTCTransformations for UTCDay {
     #[inline]
     fn from_secs(s: u64) -> Self {
-        Self((s / SECONDS_PER_DAY) as u32)
+        Self(s / SECONDS_PER_DAY)
     }
 
     #[inline]
     fn as_secs(&self) -> u64 {
-        (self.0 as u64) * SECONDS_PER_DAY
+        self.0 * SECONDS_PER_DAY
     }
 
     #[inline]
     fn from_millis(ms: u64) -> Self {
-        Self((ms / MILLIS_PER_DAY) as u32)
+        Self(ms / MILLIS_PER_DAY)
     }
 
     #[inline]
     fn as_millis(&self) -> u64 {
-        (self.0 as u64) * MILLIS_PER_DAY
+        self.0 * MILLIS_PER_DAY
     }
 
     #[inline]
     fn from_micros(us: u64) -> Self {
-        Self((us / MICROS_PER_DAY) as u32)
+        Self(us / MICROS_PER_DAY)
     }
 
     #[inline]
     fn as_micros(&self) -> u64 {
-        (self.0 as u64) * MICROS_PER_DAY
+        self.0 * MICROS_PER_DAY
     }
 
     #[inline]
     fn from_nanos(ns: u64) -> Self {
-        Self((ns / NANOS_PER_DAY) as u32)
+        Self(ns / NANOS_PER_DAY)
     }
 
     #[inline]
     fn as_nanos(&self) -> u64 {
-        (self.0 as u64) * NANOS_PER_DAY
+        self.0 * NANOS_PER_DAY
     }
 
     #[inline]
@@ -654,28 +654,28 @@ mod test {
     #[test]
     fn test_from_days_and_nanos() -> Result<()> {
         let test_cases = [
-            (UTCTimestamp::from_nanos(0), UTCDay::from_u32(0), UTCTimeOfDay::try_from_secs(0)?, 4),
+            (UTCTimestamp::from_nanos(0), UTCDay::from_u64(0), UTCTimeOfDay::try_from_secs(0)?, 4),
             (
                 UTCTimestamp::from_nanos(123456789),
-                UTCDay::from_u32(0),
+                UTCDay::from_u64(0),
                 UTCTimeOfDay::try_from_nanos(123456789)?,
                 4,
             ),
             (
                 UTCTimestamp::from_millis(1686756677000),
-                UTCDay::from_u32(19522),
+                UTCDay::from_u64(19522),
                 UTCTimeOfDay::try_from_nanos(55_877_000_000_000)?,
                 3,
             ),
             (
                 UTCTimestamp::from_millis(1709220677000),
-                UTCDay::from_u32(19782),
+                UTCDay::from_u64(19782),
                 UTCTimeOfDay::try_from_micros(55_877_000_000)?,
                 4,
             ),
             (
                 UTCTimestamp::from_millis(1677684677000),
-                UTCDay::from_u32(19417),
+                UTCDay::from_u64(19417),
                 UTCTimeOfDay::try_from_millis(55_877_000)?,
                 3,
             ),
@@ -684,7 +684,7 @@ mod test {
                     (((u32::MAX as u64) + 1) * SECONDS_PER_DAY) - 1,
                     (NANOS_PER_SECOND - 1) as u32,
                 )),
-                UTCDay::from_u32(u32::MAX),
+                UTCDay::from_u64(u64::MAX),
                 UTCTimeOfDay::try_from_nanos(NANOS_PER_DAY - 1)?,
                 0,
             ),
