@@ -4,7 +4,7 @@
 //! proleptic Gregorian Calendar (the *civil* calendar),
 //! to create UTC dates.
 
-use core::{time::Duration, cmp::Ordering, fmt::{Display, Formatter}};
+use core::{time::Duration, fmt::{Display, Formatter}};
 
 use anyhow::{Result, bail};
 
@@ -40,26 +40,12 @@ use crate::time::{UTCDay, UTCTimestamp, UTCTransformations};
 /// ## Safety
 /// Unchecked methods are provided for use in hot paths requiring high levels of optimisation.
 /// These methods assume valid input.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct UTCDate {
     era: u32,
     yoe: u16,
     month: u8,
     day: u8,
-}
-
-impl Ord for UTCDate {
-    fn cmp(&self, other: &Self) -> Ordering {
-        if self.era < other.era { return Ordering::Less }
-        if self.era > other.era { return Ordering::Greater }
-        if self.yoe < other.yoe { return Ordering::Less }
-        if self.yoe > other.yoe { return Ordering::Greater }
-        if self.month < other.month { return Ordering::Less }
-        if self.month > other.month { return Ordering::Greater }
-        if self.day < other.day { return Ordering::Less }
-        if self.day > other.day { return Ordering::Greater }
-        Ordering::Equal
-    }
 }
 
 impl Display for UTCDate {
@@ -73,7 +59,7 @@ impl UTCDate {
     /// The minimum UTC Date supported
     ///
     /// Equal to the epoch at Jan 1, 1970.
-    pub const MIN: UTCDate = UTCDate { era: 4, yoe: 370, month: 1, day: 1 };
+    pub const MIN: Self = Self { era: 4, yoe: 370, month: 1, day: 1 };
 
     /// The maximum UTC Date supported.
     ///
@@ -81,7 +67,7 @@ impl UTCDate {
     ///
     /// Maximum date support is limited by the maximum `UTCTimestamp`.
     /// UTCDate can physically store dates up to `December 31, 1_717_986_918_399`
-    pub const MAX: UTCDate = UTCDate { era: 1_461_385_128, yoe: 23, month: 11, day: 9 };
+    pub const MAX: Self = Self { era: 1_461_385_128, yoe: 23, month: 11, day: 9 };
 
     /// The maximum year supported
     pub const MAX_YEAR: u64 = 584_554_051_223;
@@ -91,7 +77,7 @@ impl UTCDate {
 
     /// Unchecked method to create a UTC Date from provided year, month and day.
     ///
-    /// # Safety
+    /// ## Safety
     /// Unsafe if the user passes an invalid calendar year, month and day combination.
     /// Invalid inputs are not checked and may cause a panic in other methods.
     #[inline]
@@ -116,11 +102,9 @@ impl UTCDate {
         if date.day == 0 || date.day > date.days_in_month() {
             bail!("Day out of range! (date: {date}");
         }
-
         if date > UTCDate::MAX {
             bail!("Date out of range! (date: {date}");
         }
-
         Ok(date)
     }
 
@@ -156,7 +140,7 @@ impl UTCDate {
         let doy = ((153 * (if m > 2 { m - 3 } else { m + 9 }) + 2) / 5) + d - 1;
         let doe = (yoe * 365) + (yoe / 4) - (yoe / 100) + doy as u32;
         let days = (era as u64 * 146097)  + doe as u64 - 719468;
-        UTCDay::from_u64(days)
+        unsafe { UTCDay::from_u64_unchecked(days) }
     }
 
     /// Get copy of the date components as integers
@@ -349,11 +333,11 @@ mod test {
     fn test_date_from_day() -> Result<()> {
         use crate::time::UTCDay;
         let test_cases = [
-            (UTCDay::from(0), 1970, 1, 1),
-            (UTCDay::from(30), 1970, 1, 31),
-            (UTCDay::from(19522), 2023, 6, 14),
-            (UTCDay::from(381112), 3013, 6, 14),
-            (UTCDay::from(213503982334601), UTCDate::MAX_YEAR, 11, 09),
+            (UTCDay::ZERO, 1970, 1, 1),
+            (UTCDay::try_from_u64(30)?, 1970, 1, 31),
+            (UTCDay::try_from_u64(19522)?, 2023, 6, 14),
+            (UTCDay::try_from_u64(381112)?, 3013, 6, 14),
+            (UTCDay::MAX, UTCDate::MAX_YEAR, 11, 09),
         ];
 
         for (utc_day, year, month, day) in test_cases {

@@ -319,20 +319,20 @@ impl From<Duration> for UTCDatetime {
 mod test {
     use anyhow::Result;
 
-    use crate::{UTCDatetime, date::UTCDate, time::UTCTimeOfDay};
+    use crate::{UTCDatetime, date::UTCDate, time::{UTCTimeOfDay, UTCDay}};
 
     #[test]
     fn test_datetime_from_raw_components() -> Result<()> {
         let test_cases = [
-            (1970, 1, 1, 0, 0, 0, 0, 0, 0),                                 // thu, 00:00:00.000
-            (2023, 6, 14, 09, 20, 09, 648_000_000, 33_609_648_000_000, 19522), // wed, 09:20:09.648
+            (1970, 1, 1, 0, 0, 0, 0, 0, UTCDay::ZERO), // thu, 00:00:00.000
+            (2023, 6, 14, 09, 20, 09, 648_000_000, 33_609_648_000_000, UTCDay::try_from_u64(19522)?), // wed, 09:20:09.648
         ];
 
         for (year, month, day, hrs, mins, secs, subsec_ns, expected_tod_ns, expected_day) in test_cases {
             let date = UTCDate::try_from_components(year, month, day)?;
             let tod = UTCTimeOfDay::try_from_hhmmss(hrs, mins, secs, subsec_ns)?;
             let datetime = UTCDatetime::from_components(date, tod);
-            assert_eq!(datetime.as_date().as_day(), expected_day.into());
+            assert_eq!(datetime.as_date().as_day(), expected_day);
             assert_eq!(datetime.as_tod().as_nanos(), expected_tod_ns);
         }
 

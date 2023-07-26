@@ -8,7 +8,7 @@ use core::time::Duration;
 use std::time::SystemTime;
 
 use anyhow::{anyhow, Result, bail};
-use derive_more::{Add, Div, From, Into, Mul, Sub};
+use derive_more::{Add, Div, From, Into, Mul, Sub, Display};
 
 use crate::constants::*;
 
@@ -55,7 +55,7 @@ impl UTCTimestamp {
     /// Create a UTC Timestamp from UTC day and time-of-day components
     #[inline]
     pub const fn from_day_and_tod(day: UTCDay, tod: UTCTimeOfDay) -> Self {
-        let secs = day.0 as u64 * SECONDS_PER_DAY + tod.as_secs() as u64;
+        let secs = (day.0 * SECONDS_PER_DAY).saturating_add(tod.as_secs() as u64);
         let subsec_ns = tod.as_subsec_ns();
         Self(Duration::new(secs, subsec_ns))
     }
@@ -292,6 +292,9 @@ where
 /// let weekday = utc_day.as_weekday();
 /// ```
 ///
+/// ## Safety
+/// Unchecked methods are provided for use in hot paths requiring high levels of optimisation.
+/// These methods assume valid input.
 #[derive(
     Debug,
     Clone,
@@ -306,17 +309,37 @@ where
     Sub,
     Mul,
     Div,
-    From,
-    Into,
+    Display,
 )]
 pub struct UTCDay(u64);
 
 impl UTCDay {
-    /// Create UTC Day from integer.
-    /// Const evaluation alternative to `From<u64>`
+    /// The zero UTC day value.
+    ///
+    /// Equal to the epoch day.
+    pub const ZERO: Self = Self(0);
+
+    /// The maximum time of day value.
+    ///
+    /// Maximum day support is limited by the maximum `UTCTimestamp`.
+    pub const MAX: Self = Self(213_503_982_334_601);
+
+    /// Create UTC Day from integer
+    ///
+    /// ## Safety
+    /// Unsafe if the user passes an unsupported count of UTC days, exceeding `UTCDay::MAX`.
     #[inline]
-    pub const fn from_u64(u: u64) -> Self {
+    pub const unsafe fn from_u64_unchecked(u: u64) -> Self {
         Self(u)
+    }
+
+    /// Try create UTC Day from integer.
+    pub fn try_from_u64(u: u64) -> Result<Self> {
+        let day = unsafe { Self::from_u64_unchecked(u) };
+        if day > Self::MAX {
+            bail!("UTC Day exceeding maximum: {}", day);
+        }
+        Ok(day)
     }
 
     /// UTC Day as internal integer
@@ -338,7 +361,7 @@ impl UTCDay {
     /// Reference:
     /// <http://howardhinnant.github.io/date_algorithms.html#weekday_from_days>
     pub fn as_weekday(&self) -> u8 {
-        ((self.0 as u64 + 4) % 7) as u8
+        ((self.0 + 4) % 7) as u8
     }
 }
 
@@ -452,10 +475,19 @@ impl From<UTCTimestamp> for UTCDay {
     Sub,
     Mul,
     Div,
+    Display,
 )]
 pub struct UTCTimeOfDay(u64);
 
 impl UTCTimeOfDay {
+    /// The zero time of day value
+    pub const ZERO: Self = Self(0);
+
+    /// The maximum time of day value.
+    ///
+    /// Equal to the number of nanoseconds in a day.
+    pub const MAX: Self = Self(NANOS_PER_DAY);
+
     /// Unchecked method to create time of day from nanoseconds
     ///
     /// ### Safety
@@ -515,10 +547,11 @@ impl UTCTimeOfDay {
 
     /// Try to create UTC time of day from nanoseconds
     pub fn try_from_nanos(ns: u64) -> Result<Self> {
-        if ns >= NANOS_PER_DAY {
+        let tod = unsafe { Self::from_nanos_unchecked(ns) };
+        if tod > Self::MAX {
             bail!("Nanoseconds not within a day! (ns: {})", ns);
         }
-        Ok(Self(ns))
+        Ok(tod)
     }
 
     /// Try to create UTC time of day from microseconds
@@ -649,44 +682,41 @@ mod test {
 
     use anyhow::Result;
 
-    use crate::{time::{UTCDay, UTCTimeOfDay, UTCTimestamp, UTCTransformations}, constants::{SECONDS_PER_DAY, NANOS_PER_DAY, NANOS_PER_SECOND}};
+    use crate::{time::{UTCDay, UTCTimeOfDay, UTCTimestamp, UTCTransformations}, constants::NANOS_PER_SECOND};
 
     #[test]
     fn test_from_days_and_nanos() -> Result<()> {
         let test_cases = [
-            (UTCTimestamp::from_nanos(0), UTCDay::from_u64(0), UTCTimeOfDay::try_from_secs(0)?, 4),
+            (UTCTimestamp::from_nanos(0), UTCDay::ZERO, UTCTimeOfDay::try_from_secs(0)?, 4),
             (
                 UTCTimestamp::from_nanos(123456789),
-                UTCDay::from_u64(0),
+                UTCDay::ZERO,
                 UTCTimeOfDay::try_from_nanos(123456789)?,
                 4,
             ),
             (
                 UTCTimestamp::from_millis(1686756677000),
-                UTCDay::from_u64(19522),
+                UTCDay::try_from_u64(19522)?,
                 UTCTimeOfDay::try_from_nanos(55_877_000_000_000)?,
                 3,
             ),
             (
                 UTCTimestamp::from_millis(1709220677000),
-                UTCDay::from_u64(19782),
+                UTCDay::try_from_u64(19782)?,
                 UTCTimeOfDay::try_from_micros(55_877_000_000)?,
                 4,
             ),
             (
                 UTCTimestamp::from_millis(1677684677000),
-                UTCDay::from_u64(19417),
+                UTCDay::try_from_u64(19417)?,
                 UTCTimeOfDay::try_from_millis(55_877_000)?,
                 3,
             ),
             (
-                UTCTimestamp::from_duration(Duration::new(
-                    (((u32::MAX as u64) + 1) * SECONDS_PER_DAY) - 1,
-                    (NANOS_PER_SECOND - 1) as u32,
-                )),
-                UTCDay::from_u64(u64::MAX),
-                UTCTimeOfDay::try_from_nanos(NANOS_PER_DAY - 1)?,
-                0,
+                UTCTimestamp::from_duration(Duration::MAX),
+                UTCDay::MAX,
+                UTCTimeOfDay::try_from_nanos(25215 * NANOS_PER_SECOND + NANOS_PER_SECOND - 1)?,
+                4,
             ),
         ];
 
