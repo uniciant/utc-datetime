@@ -87,9 +87,9 @@ impl UTCDate {
     ///
     /// Simplified for unsigned days/years
     pub const fn from_day(utc_day: UTCDay) -> Self {
-        let z = utc_day.as_u32() + 719468;
-        let era = z / 146097;
-        let doe = z - (era * 146097);
+        let z: u64 = utc_day.as_u64() + 719468;
+        let era: u32 = (z / 146097) as u32;
+        let doe = (z - (era as u64 * 146097)) as u32;
         let yoe = (doe - (doe / 1460) + (doe / 36524) - (doe / 146096)) / 365;
         let doy = doe - (365 * yoe) - (yoe / 4) + (yoe / 100);
         let mp = ((5 * doy) + 2) / 153;
@@ -113,8 +113,8 @@ impl UTCDate {
         let yoe = y - era * 400;
         let doy = ((153 * (if m > 2 { m - 3 } else { m + 9 }) + 2) / 5) + d - 1;
         let doe = (yoe * 365) + (yoe / 4) - (yoe / 100) + doy;
-        let days = (era * 146097) + doe - 719468;
-        UTCDay::from_u32(days)
+        let days = (era as u64 * 146097)  + doe as u64 - 719468;
+        UTCDay::from_u64(days)
     }
 
     /// Get copy of the date components as integers
@@ -257,25 +257,26 @@ mod test {
     use anyhow::{Result, bail};
 
     use crate::date::UTCDate;
-    use crate::time::UTCDay;
 
     #[test]
     fn test_date_from_components() -> Result<()> {
         let test_cases = [
-            (2023, 6, 14, true),   // valid recent date
-            (1970, 1, 1, true),    // valid epoch date
-            (2024, 2, 29, true),   // valid leap day
-            (1969, 12, 31, false), // invalid before epoch
-            (2023, 2, 29, false),  // invalid date
-            (2023, 0, 10, false),  // invalid date, month out of range
-            (2023, 13, 10, false), // invalid date, month out of range
-            (2023, 9, 31, false),  // invalid date, day out of range
-            (2023, 9, 0, false),   // invalid date, day out of range
+            (2023, 6, 14, true, false, 30),   // valid recent date
+            (1970, 1, 1, true, false, 31),    // valid epoch date
+            (2024, 2, 29, true, true, 29),   // valid leap day
+            (1969, 12, 31, false, false, 31), // invalid before epoch
+            (2023, 2, 29, false, false, 28),  // invalid date
+            (2023, 0, 10, false, false, 0),  // invalid date, month out of range
+            (2023, 13, 10, false, false, 0), // invalid date, month out of range
+            (2023, 9, 31, false, false, 30),  // invalid date, day out of range
+            (2023, 9, 0, false, false, 30),   // invalid date, day out of range
+            (u32::MAX, 12, 31, true, false, 31), // valid max date
+            (u32::MAX, u8::MAX, u8::MAX, false, false, 0), // invalid max date
         ];
 
-        for (year, month, day, case_is_valid) in test_cases {
+        for (year, month, day, case_is_valid, is_leap_year, days_in_month) in test_cases {
             match UTCDate::try_from_components(year, month, day) {
-                Ok(_) => {
+                Ok(date) => {
                     if !case_is_valid {
                         bail!(
                             "Case passed unexpectedly. (date: {:04}-{:02}-{:02})",
@@ -284,6 +285,8 @@ mod test {
                             day
                         );
                     }
+                    assert_eq!(is_leap_year, date.is_leap_year());
+                    assert_eq!(days_in_month, date.days_in_month());
                 }
                 Err(e) => {
                     if case_is_valid {
@@ -297,36 +300,93 @@ mod test {
     }
 
     #[test]
-    fn test_from_day() -> Result<()> {
+    fn test_date_from_day() -> Result<()> {
+        use crate::time::UTCDay;
         let test_cases = [
             (UTCDay::from(0), 1970, 1, 1),
             (UTCDay::from(30), 1970, 1, 31),
             (UTCDay::from(19522), 2023, 6, 14),
             (UTCDay::from(381112), 3013, 6, 14),
+            (UTCDay::from(1568703873081), u32::MAX, 12, 31),
         ];
 
         for (utc_day, year, month, day) in test_cases {
-            let date = UTCDate::from_day(utc_day);
-            let expected = UTCDate { year, month, day };
-            assert_eq!(date, expected);
+            let date_from_day = UTCDate::from_day(utc_day);
+            let date_from_comp = UTCDate::try_from_components(year, month, day)?;
+            assert_eq!(date_from_day, date_from_comp);
+
+            let day_from_date = date_from_comp.as_day();
+            assert_eq!(utc_day, day_from_date);
+
+            assert_eq!((year, month, day), date_from_comp.as_components());
+            assert_eq!((year, month, day), date_from_comp.to_components());
         }
 
         Ok(())
     }
 
     #[test]
-    fn test_to_day() -> Result<()> {
+    fn test_date_iso_conversions() -> Result<()> {
         let test_cases = [
-            (UTCDay::from(0), 1970, 1, 1),
-            (UTCDay::from(30), 1970, 1, 31),
-            (UTCDay::from(19522), 2023, 6, 14),
-            (UTCDay::from(381112), 3013, 6, 14),
+            (2023, 6, 14, true, "2023-06-14"),   // valid recent date
+            (1970, 1, 1, true, "1970-01-01"),    // valid epoch date
+            (2024, 2, 29, true, "2024-02-29"),   // valid leap day
+            (1969, 12, 31, false, "1969-12-31"), // invalid before epoch
+            (2023, 2, 29, false, "2023-02-29"),  // invalid date
+            (2023, 0, 10, false, "2023-00-10"),  // invalid date, month out of range
+            (2023, 13, 10, false, "2023-13-10"), // invalid date, month out of range
+            (2023, 9, 31, false, "2023-09-31"),  // invalid date, day out of range
+            (2023, 9, 0, false, "2023-09-00"),   // invalid date, day out of range
+            (u32::MAX, 12, 31, false, "4294967295-12-31"), // valid last date, iso date out of range
         ];
 
-        for (expected, year, month, day) in test_cases {
+        for (year, month, day, case_is_valid, iso_date) in test_cases {
+            match UTCDate::try_from_iso_date(iso_date) {
+                Ok(_) => {
+                    if !case_is_valid {
+                        bail!(
+                            "Case passed unexpectedly. (date: {:04}-{:02}-{:02})",
+                            year,
+                            month,
+                            day
+                        );
+                    }
+
+                    let date_from_comp = UTCDate::try_from_components(year, month, day)?;
+                    assert_eq!(iso_date, date_from_comp.as_iso_date());
+                }
+                Err(e) => {
+                    if case_is_valid {
+                        return Err(e);
+                    }
+                }
+            }
+
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_date_transformations() -> Result<()> {
+        use crate::time::UTCTransformations;
+        use crate::time::UTCTimestamp;
+
+        let test_cases = [
+            (UTCTimestamp::from_secs(0), 1970, 1, 1),
+            (UTCTimestamp::from_secs(2592000), 1970, 1, 31),
+            (UTCTimestamp::from_secs(1686700800), 2023, 6, 14),
+            (UTCTimestamp::from_secs(32928076800), 3013, 6, 14),
+            (UTCTimestamp::from_secs(371085174288000), 11761191, 1, 20),
+            (UTCTimestamp::from_secs(135536014634198400), u32::MAX, 12, 31),
+            (UTCTimestamp::from_secs(135536014634198400), u32::MAX, 12, 31),
+        ];
+
+        for (timestamp, year, month, day) in test_cases {
             let date = UTCDate::try_from_components(year, month, day)?;
-            let utc_day = date.as_day();
-            assert_eq!(utc_day, expected);
+
+            assert_eq!(timestamp, date.as_timestamp());
+            assert_eq!(UTCDate::from_timestamp(timestamp), date);
         }
 
         Ok(())
