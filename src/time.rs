@@ -2,7 +2,7 @@
 //!
 //! Implements core time concepts via UTC Timestamps and UTC Days.
 
-use core::time::Duration;
+use core::{time::Duration, fmt::{Display, Formatter}};
 
 #[cfg(feature = "std")]
 use std::time::SystemTime;
@@ -475,9 +475,15 @@ impl From<UTCTimestamp> for UTCDay {
     Sub,
     Mul,
     Div,
-    Display,
 )]
 pub struct UTCTimeOfDay(u64);
+
+impl Display for UTCTimeOfDay {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        let (hrs, mins, secs) = self.as_hhmmss();
+        write!(f, "T{:02}:{:02}:{:02}.{:09}Z", hrs, mins, secs, self.as_subsec_ns())
+    }
+}
 
 impl UTCTimeOfDay {
     /// The zero time of day value
@@ -665,12 +671,13 @@ impl UTCTimeOfDay {
     /// <https://www.w3.org/TR/NOTE-datetime>
     #[cfg(feature = "std")]
     pub fn as_iso_tod(&self, precision: Option<usize>) -> String {
-        let (hrs, mins, secs) = self.as_hhmmss();
-        let mut s = format!("T{:02}:{:02}:{:02}", hrs, mins, secs);
-        if let Some(p) = precision {
-            let subsec_ns_str = format!(".{:09}", self.as_subsec_ns());
-            s.push_str(&subsec_ns_str[..=p.min(9)])
-        }
+        let mut s = format!("{self}");
+        let len = if let Some(p) = precision {
+            10 + p.min(9)
+        } else {
+            9
+        };
+        s.truncate(len);
         s.push('Z');
         s
     }

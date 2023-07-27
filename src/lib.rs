@@ -185,7 +185,7 @@ pub mod time;
 #[rustfmt::skip]
 pub mod constants;
 
-use core::time::Duration;
+use core::{time::Duration, fmt::{Display, Formatter}};
 
 use anyhow::Result;
 
@@ -217,6 +217,12 @@ use time::{UTCTimestamp, UTCTransformations, UTCTimeOfDay};
 pub struct UTCDatetime {
     date: UTCDate,
     tod: UTCTimeOfDay,
+}
+
+impl Display for UTCDatetime {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}{}", self.date, self.tod)
+    }
 }
 
 impl UTCDatetime {
