@@ -40,12 +40,18 @@ use crate::time::{UTCDay, UTCTimestamp, UTCTransformations};
 /// ## Safety
 /// Unchecked methods are provided for use in hot paths requiring high levels of optimisation.
 /// These methods assume valid input.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct UTCDate {
     era: u32,
     yoe: u16,
     month: u8,
     day: u8,
+}
+
+impl Default for UTCDate {
+    fn default() -> Self {
+        Self::MIN
+    }
 }
 
 impl Display for UTCDate {
@@ -231,7 +237,7 @@ impl UTCTransformations for UTCDate {
         Self::from_day(utc_day)
     }
 
-    fn as_millis(&self) -> u64 {
+    fn as_millis(&self) -> u128 {
         self.as_day().as_millis()
     }
 
@@ -240,7 +246,7 @@ impl UTCTransformations for UTCDate {
         Self::from_day(utc_day)
     }
 
-    fn as_micros(&self) -> u64 {
+    fn as_micros(&self) -> u128 {
         self.as_day().as_micros()
     }
 
@@ -249,7 +255,7 @@ impl UTCTransformations for UTCDate {
         Self::from_day(utc_day)
     }
 
-    fn as_nanos(&self) -> u64 {
+    fn as_nanos(&self) -> u128 {
         self.as_day().as_nanos()
     }
 
@@ -283,9 +289,11 @@ impl From<UTCDay> for UTCDate {
 
 #[cfg(test)]
 mod test {
-    use anyhow::{Result, bail};
+    use std::collections::HashSet;
 
-    use crate::{date::UTCDate, constants::SECONDS_PER_DAY};
+    use anyhow::Result;
+
+    use crate::{date::UTCDate, constants::{SECONDS_PER_DAY, MILLIS_PER_DAY, MICROS_PER_DAY, NANOS_PER_DAY}};
 
     #[test]
     fn test_date_from_components() -> Result<()> {
@@ -301,27 +309,19 @@ mod test {
             (2023, 9, 31, false, false, 30),  // invalid date, day out of range
             (2023, 9, 0, false, false, 30),   // invalid date, day out of range
             (UTCDate::MAX_YEAR, 11, 09, true, false, 30), // valid max date
+            (UTCDate::MAX_YEAR, 12, 31, false, false, 0), // invalid max date
             (UTCDate::MAX_YEAR, u8::MAX, u8::MAX, false, false, 0), // invalid max date
         ];
 
         for (year, month, day, case_is_valid, is_leap_year, days_in_month) in test_cases {
             match UTCDate::try_from_components(year, month, day) {
                 Ok(date) => {
-                    if !case_is_valid {
-                        bail!(
-                            "Case passed unexpectedly. (date: {:04}-{:02}-{:02})",
-                            year,
-                            month,
-                            day
-                        );
-                    }
+                    assert!(case_is_valid);
                     assert_eq!(is_leap_year, date.is_leap_year());
                     assert_eq!(days_in_month, date.days_in_month());
                 }
-                Err(e) => {
-                    if case_is_valid {
-                        return Err(e);
-                    }
+                Err(_) => {
+                    assert!(!case_is_valid);
                 }
             }
         }
@@ -370,23 +370,14 @@ mod test {
 
         for (year, month, day, case_is_valid, iso_date) in test_cases {
             match UTCDate::try_from_iso_date(iso_date) {
-                Ok(_) => {
-                    if !case_is_valid {
-                        bail!(
-                            "Case passed unexpectedly. (date: {:04}-{:02}-{:02})",
-                            year,
-                            month,
-                            day
-                        );
-                    }
-
+                Ok(date_from_iso) => {
+                    assert!(case_is_valid);
                     let date_from_comp = UTCDate::try_from_components(year, month, day)?;
+                    assert_eq!(date_from_comp, date_from_iso);
                     assert_eq!(iso_date, date_from_comp.as_iso_date());
                 }
-                Err(e) => {
-                    if case_is_valid {
-                        return Err(e);
-                    }
+                Err(_) => {
+                    assert!(!case_is_valid);
                 }
             }
 
@@ -409,14 +400,64 @@ mod test {
             (UTCTimestamp::from_secs(u64::MAX - u64::MAX % SECONDS_PER_DAY), 584554051223, 11, 9),
         ];
 
+        let mut hash_set: HashSet<UTCDate> = HashSet::new();
+
         for (timestamp, year, month, day) in test_cases {
             let date_from_components = UTCDate::try_from_components(year, month, day)?;
+            // test transformations to/from durations
+            let duration_from_date = date_from_components.as_duration();
+            let date_from_duration = UTCDate::from_duration(timestamp.as_duration());
+            assert_eq!(date_from_duration, date_from_components);
+            assert_eq!(timestamp.as_duration(), duration_from_date);
+            // test transformations to/from timestamps
             let timestamp_from_date = date_from_components.as_timestamp();
             let date_from_timestamp = UTCDate::from_timestamp(timestamp);
             assert_eq!(date_from_timestamp, date_from_components);
             assert_eq!(timestamp, timestamp_from_date);
+            // test From implementations
+            let date_from_duration = UTCDate::from(timestamp.as_duration());
+            assert_eq!(date_from_components, date_from_duration);
+            let date_from_timestamp = UTCDate::from(timestamp);
+            assert_eq!(date_from_components, date_from_timestamp);
+            let day = timestamp.as_day();
+            let date_from_day = UTCDate::from(day);
+            assert_eq!(date_from_components, date_from_day);
+            // test unit conversions
+            let secs = timestamp.as_secs();
+            let millis = timestamp.as_millis() as u64;
+            let micros = timestamp.as_micros() as u64;
+            let nanos = timestamp.as_nanos() as u64;
+            let date_from_secs = UTCDate::from_secs(secs);
+            let date_from_millis = UTCDate::from_millis(millis);
+            let date_from_micros = UTCDate::from_micros(micros);
+            let date_from_nanos = UTCDate::from_nanos(nanos);
+            assert_eq!(date_from_components, date_from_secs);
+            let secs_from_date = date_from_secs.as_secs();
+            let millis_from_date = date_from_millis.as_millis() as u64;
+            let micros_from_date = date_from_micros.as_micros() as u64;
+            let nanos_from_date = date_from_nanos.as_nanos() as u64;
+            assert!(secs - secs_from_date < SECONDS_PER_DAY);
+            assert!(millis - millis_from_date < MILLIS_PER_DAY);
+            assert!(micros - micros_from_date < MICROS_PER_DAY);
+            assert!(nanos - nanos_from_date < NANOS_PER_DAY);
+            // test hashing
+            hash_set.insert(date_from_components);
+            assert!(hash_set.contains(&date_from_components));
+            assert_eq!(&date_from_components, hash_set.get(&date_from_components).unwrap());
         }
 
+        // test transform from system time
+        let date_from_system_time = UTCDate::try_from_system_time()?;
+        assert!(date_from_system_time >= UTCDate::MIN);
+        assert!(date_from_system_time <= UTCDate::MAX);
+        // test debug & display
+        println!("{:?}:{date_from_system_time}", date_from_system_time);
+        // test default, clone & copy, ord
+        assert_eq!(UTCDate::default().clone(), UTCDate::MIN);
+        let date_copy = date_from_system_time;
+        assert_eq!(date_copy, date_from_system_time);
+        assert_eq!(UTCDate::MIN, date_copy.min(UTCDate::MIN));
+        assert_eq!(UTCDate::MAX, date_copy.max(UTCDate::MAX));
         Ok(())
     }
 }

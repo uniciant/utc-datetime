@@ -120,8 +120,8 @@ impl UTCTimestamp {
 
     /// Convert to milliseconds measured from the Unix Epoch.
     #[inline]
-    pub const fn as_millis(&self) -> u64 {
-        self.0.as_millis() as u64
+    pub const fn as_millis(&self) -> u128 {
+        self.0.as_millis()
     }
 
     /// Create UTC Timestamp from microseconds since the Unix Epoch.
@@ -132,8 +132,8 @@ impl UTCTimestamp {
 
     /// Convert to microseconds measured from the Unix Epoch.
     #[inline]
-    pub const fn as_micros(&self) -> u64 {
-        self.0.as_micros() as u64
+    pub const fn as_micros(&self) -> u128 {
+        self.0.as_micros()
     }
 
     /// Create UTC Timestamp from nanoseconds since the Unix Epoch.
@@ -144,8 +144,8 @@ impl UTCTimestamp {
 
     /// Convert to seconds measured from the Unix Epoch.
     #[inline]
-    pub const fn as_nanos(&self) -> u64 {
-        self.0.as_nanos() as u64
+    pub const fn as_nanos(&self) -> u128 {
+        self.0.as_nanos()
     }
 }
 
@@ -236,7 +236,7 @@ where
 
     /// Convert to milliseconds measured from the Unix Epoch.
     #[inline]
-    fn as_millis(&self) -> u64 {
+    fn as_millis(&self) -> u128 {
         self.as_timestamp().as_millis()
     }
 
@@ -249,7 +249,7 @@ where
 
     /// Convert to microseconds measured from the Unix Epoch.
     #[inline]
-    fn as_micros(&self) -> u64 {
+    fn as_micros(&self) -> u128 {
         self.as_timestamp().as_micros()
     }
 
@@ -262,7 +262,7 @@ where
 
     /// Convert to nanoseconds measured from the Unix Epoch.
     #[inline]
-    fn as_nanos(&self) -> u64 {
+    fn as_nanos(&self) -> u128 {
         self.as_timestamp().as_nanos()
     }
 
@@ -382,8 +382,8 @@ impl UTCTransformations for UTCDay {
     }
 
     #[inline]
-    fn as_millis(&self) -> u64 {
-        self.0 * MILLIS_PER_DAY
+    fn as_millis(&self) -> u128 {
+        self.0 as u128 * MILLIS_PER_DAY as u128
     }
 
     #[inline]
@@ -392,8 +392,8 @@ impl UTCTransformations for UTCDay {
     }
 
     #[inline]
-    fn as_micros(&self) -> u64 {
-        self.0 * MICROS_PER_DAY
+    fn as_micros(&self) -> u128 {
+        self.0 as u128 * MICROS_PER_DAY as u128
     }
 
     #[inline]
@@ -402,8 +402,8 @@ impl UTCTransformations for UTCDay {
     }
 
     #[inline]
-    fn as_nanos(&self) -> u64 {
-        self.0 * NANOS_PER_DAY
+    fn as_nanos(&self) -> u128 {
+        self.0 as u128 * NANOS_PER_DAY as u128
     }
 
     #[inline]
