@@ -8,7 +8,6 @@ use core::{time::Duration, fmt::{Display, Formatter}};
 use std::time::SystemTime;
 
 use anyhow::{anyhow, Result, bail};
-use derive_more::{Add, Div, From, Into, Mul, Sub, Display};
 
 use crate::constants::*;
 
@@ -41,10 +40,20 @@ use crate::constants::*;
 /// let utc_timestamp = UTCTimestamp::from_day_and_tod(utc_day, utc_tod);
 /// ```
 ///
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, From, Into)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct UTCTimestamp(Duration);
 
 impl UTCTimestamp {
+    /// The 'Zero' UTC Timestamp
+    ///
+    /// Equivalent to the instant of the epoch
+    pub const ZERO: UTCTimestamp = UTCTimestamp(Duration::ZERO);
+
+    /// The maximum UTC Timestamp
+    ///
+    /// Equal to `November 9, 584_554_051_223`
+    pub const MAX: UTCTimestamp = UTCTimestamp(Duration::MAX);
+
     /// Create a UTC Timestamp from UTC day
     #[inline]
     pub const fn from_day(day: UTCDay) -> Self {
@@ -146,6 +155,18 @@ impl UTCTimestamp {
     #[inline]
     pub const fn as_nanos(&self) -> u128 {
         self.0.as_nanos()
+    }
+}
+
+impl From<Duration> for UTCTimestamp {
+    fn from(value: Duration) -> Self {
+        Self(value)
+    }
+}
+
+impl Into<Duration> for UTCTimestamp {
+    fn into(self) -> Duration {
+        self.0
     }
 }
 
@@ -305,11 +326,6 @@ where
     Ord,
     Hash,
     Default,
-    Add,
-    Sub,
-    Mul,
-    Div,
-    Display,
 )]
 pub struct UTCDay(u64);
 
@@ -337,7 +353,7 @@ impl UTCDay {
     pub fn try_from_u64(u: u64) -> Result<Self> {
         let day = unsafe { Self::from_u64_unchecked(u) };
         if day > Self::MAX {
-            bail!("UTC Day exceeding maximum: {}", day);
+            bail!("UTC Day exceeding maximum: {}", day.to_u64());
         }
         Ok(day)
     }
@@ -471,10 +487,6 @@ impl From<UTCTimestamp> for UTCDay {
     Ord,
     Hash,
     Default,
-    Add,
-    Sub,
-    Mul,
-    Div,
 )]
 pub struct UTCTimeOfDay(u64);
 
@@ -492,7 +504,7 @@ impl UTCTimeOfDay {
     /// The maximum time of day value.
     ///
     /// Equal to the number of nanoseconds in a day.
-    pub const MAX: Self = Self(NANOS_PER_DAY);
+    pub const MAX: Self = Self(NANOS_PER_DAY - 1);
 
     /// Unchecked method to create time of day from nanoseconds
     ///
