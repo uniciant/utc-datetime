@@ -77,6 +77,9 @@ fn test_date_iso_conversions() -> Result<()> {
         (2023, 13, 10, false, "2023-13-10"), // invalid date, month out of range
         (2023, 9, 31, false, "2023-09-31"),  // invalid date, day out of range
         (2023, 9, 0, false, "2023-09-00"),   // invalid date, day out of range
+        (2023, 9, 0, false, "202a-09-00"),   // invalid date, year not integer
+        (2023, 9, 0, false, "2023-0a-00"),   // invalid date, month not integer
+        (2023, 9, 0, false, "2023-09-0a"),   // invalid date, day not integer
     ];
 
     for (year, month, day, case_is_valid, iso_date) in test_cases {
@@ -169,5 +172,6 @@ fn test_date_transformations() -> Result<()> {
     assert_eq!(date_copy, date_from_system_time);
     assert_eq!(UTCDate::MIN, date_copy.min(UTCDate::MIN));
     assert_eq!(UTCDate::MAX, date_copy.max(UTCDate::MAX));
+
     Ok(())
 }
