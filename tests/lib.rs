@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use utc_dt::{
     date::UTCDate,
-    time::{UTCDay, UTCTimeOfDay, UTCTransformations, UTCTimestamp},
+    time::{UTCDay, UTCTimeOfDay, UTCTimestamp, UTCTransformations},
     UTCDatetime,
 };
 
@@ -74,10 +74,7 @@ fn test_datetime_from_raw_components() -> Result<()> {
         let mut hash_set: HashSet<UTCDatetime> = HashSet::new();
         hash_set.insert(datetime);
         assert!(hash_set.contains(&datetime));
-        assert_eq!(
-            &datetime,
-            hash_set.get(&datetime).unwrap()
-        );
+        assert_eq!(&datetime, hash_set.get(&datetime).unwrap());
     }
     // test default, clone & copy, ord
     assert_eq!(UTCDatetime::default().clone(), UTCDatetime::MIN);
@@ -136,10 +133,7 @@ fn test_datetime_iso_conversions() -> Result<()> {
 
     // test display & debug
     let datetime = UTCDatetime::try_from_system_time()?;
-    println!(
-        "{:?}:{datetime}",
-        datetime
-    );
+    println!("{:?}:{datetime}", datetime);
 
     Ok(())
 }

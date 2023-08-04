@@ -156,10 +156,7 @@ fn test_utc_day() -> Result<()> {
     let mut hash_set: HashSet<UTCDay> = HashSet::new();
     hash_set.insert(utc_day);
     assert!(hash_set.contains(&utc_day));
-    assert_eq!(
-        &utc_day,
-        hash_set.get(&utc_day).unwrap()
-    );
+    assert_eq!(&utc_day, hash_set.get(&utc_day).unwrap());
     // test default, clone & copy, ord
     assert_eq!(UTCDay::default().clone(), UTCDay::ZERO);
     let utc_day_copy = utc_day;
@@ -208,7 +205,8 @@ fn test_utc_tod() -> Result<()> {
         assert!(UTCTimeOfDay::try_from_iso_tod("T23:aa:59.999999999Z").is_err()); // invalid mins
         assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:aa.999999999Z").is_err()); // invalid secs
         assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.a99999999Z").is_err()); // invalid subsec
-        assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.9999999990Z").is_err()); // invalid precision
+        assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.9999999990Z").is_err());
+        // invalid precision
     }
 
     // test unit conversions
