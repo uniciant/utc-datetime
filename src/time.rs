@@ -7,7 +7,7 @@ use core::{time::Duration, fmt::{Display, Formatter}};
 #[cfg(feature = "std")]
 use std::time::SystemTime;
 
-use anyhow::{anyhow, Result, bail};
+use anyhow::{Result, bail};
 
 use crate::constants::*;
 
@@ -90,7 +90,6 @@ impl UTCTimestamp {
     }
 
     /// Consume UTC Timestamp into the internal Duration since the Unix Epoch.
-    /// Constant evaluation alternative to `Into<Duration>`.
     #[inline]
     pub const fn to_duration(self) -> Duration {
         self.0
@@ -161,12 +160,6 @@ impl UTCTimestamp {
 impl From<Duration> for UTCTimestamp {
     fn from(value: Duration) -> Self {
         Self(value)
-    }
-}
-
-impl Into<Duration> for UTCTimestamp {
-    fn into(self) -> Duration {
-        self.0
     }
 }
 
@@ -365,7 +358,6 @@ impl UTCDay {
     }
 
     /// Consume UTC Day to internal integer
-    /// Const evaluation alternative to `Into<u64>`
     #[inline]
     pub const fn to_u64(self) -> u64 {
         self.0
@@ -430,6 +422,14 @@ impl UTCTransformations for UTCDay {
     #[inline]
     fn as_timestamp(&self) -> UTCTimestamp {
         UTCTimestamp::from_day(*self)
+    }
+}
+
+impl TryFrom<u64> for UTCDay {
+    type Error = anyhow::Error;
+
+    fn try_from(value: u64) -> core::result::Result<Self, Self::Error> {
+        Ok(Self::try_from_u64(value)?)
     }
 }
 
@@ -574,22 +574,35 @@ impl UTCTimeOfDay {
 
     /// Try to create UTC time of day from microseconds
     pub fn try_from_micros(us: u64) -> Result<Self> {
-        let ns = us.checked_mul(NANOS_PER_MICRO)
-            .ok_or(anyhow!("Microseconds out of range!"))?;
-        Self::try_from_nanos(ns)
+        let tod = unsafe { Self::from_micros_unchecked(us) };
+        if tod > Self::MAX {
+            bail!("Microseconds not within a day! (us: {})", us);
+        }
+        Ok(tod)
     }
 
     /// Try to create UTC time of day from milliseconds
     pub fn try_from_millis(ms: u32) -> Result<Self> {
-        Self::try_from_nanos((ms as u64) * NANOS_PER_MILLI)
+        let tod = unsafe { Self::from_millis_unchecked(ms) };
+        if tod > Self::MAX {
+            bail!("Milliseconds not within a day! (ms: {})", ms);
+        }
+        Ok(tod)
     }
 
     /// Try to create UTC time of day from seconds
     pub fn try_from_secs(s: u32) -> Result<Self> {
-        Self::try_from_nanos((s as u64) * NANOS_PER_SECOND)
+        let tod = unsafe { Self::from_secs_unchecked(s) };
+        if tod > Self::MAX {
+            bail!("Seconds not within a day! (s: {})", s);
+        }
+        Ok(tod)
     }
 
     /// Try to create UTC time of day from hours, minutes, seconds and subsecond (nanosecond) components
+    ///
+    /// Inputs are not limited by divisions. eg. 61 minutes is valid input, 61 seconds, etc.
+    /// The time described must not exceed the number of nanoseconds in a day.
     pub fn try_from_hhmmss(hrs: u8, mins: u8, secs: u8, subsec_ns: u32) -> Result<Self> {
         Self::try_from_nanos(Self::_ns_from_hhmmss(hrs, mins, secs, subsec_ns))
     }
@@ -638,6 +651,11 @@ impl UTCTimeOfDay {
     #[inline]
     pub const fn as_subsec_ns(&self) -> u32 {
         (self.0 % NANOS_PER_SECOND)  as u32
+    }
+
+    /// Time of day from UTC timestamp
+    pub const fn from_timestamp(timestamp: UTCTimestamp) -> Self {
+        timestamp.as_tod()
     }
 
     /// Try parse time-of-day from string in the format:
