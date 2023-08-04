@@ -2,7 +2,8 @@
 
 [![crates.io](https://img.shields.io/crates/v/utc-dt?style=flat-square&logo=rust)](https://crates.io/crates/utc-dt)
 [![license](https://img.shields.io/badge/license-Apache--2.0_OR_MIT-blue?style=flat-square)](#license)
-[![build status](https://img.shields.io/github/actions/workflow/status/uniciant/utc-datetime/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/uniciant/utc-datetime/actions)
+[![build status](https://img.shields.io/github/actions/workflow/status/uniciant/utc-datetime/rust.yml?branch=main&style=flat-square&logo=github)](https://github.com/uniciant/utc-datetime/actions)
+[![codecov](https://codecov.io/gh/uniciant/utc-datetime/branch/main/graph/badge.svg?token=XTOHZ187TY)](https://codecov.io/gh/uniciant/utc-datetime)
 
 Simple, fast and small UTC date, timestamp and datetime library for Rust.
 
@@ -11,7 +12,7 @@ It prioritizes being space-optimal and efficient.
 
 ```toml
 [dependencies]
-utc-dt = "0.1"
+utc-dt = "0.2"
 ```
 For extended/niche features and local time-zone support see [`chrono`](https://github.com/chronotope/chrono) or [`time`](https://github.com/time-rs/time).
 
