@@ -1,23 +1,26 @@
-
 use std::collections::HashSet;
 
 use anyhow::Result;
 
-use utc_dt::{date::UTCDate, constants::{SECONDS_PER_DAY, MILLIS_PER_DAY, MICROS_PER_DAY, NANOS_PER_DAY}, time::UTCDay};
+use utc_dt::{
+    constants::{MICROS_PER_DAY, MILLIS_PER_DAY, NANOS_PER_DAY, SECONDS_PER_DAY},
+    date::UTCDate,
+    time::UTCDay,
+};
 
 #[test]
 fn test_date_from_components() -> Result<()> {
     let test_cases = [
-        (2023, 6, 14, true, false, 30),   // valid recent date
-        (1970, 1, 1, true, false, 31),    // valid epoch date
-        (2024, 2, 29, true, true, 29),   // valid leap day
-        (2024, 3, 1, true, true, 31),   // valid leap year
-        (1969, 12, 31, false, false, 31), // invalid before epoch
-        (2023, 2, 29, false, false, 28),  // invalid date
-        (2023, 0, 10, false, false, 0),  // invalid date, month out of range
-        (2023, 13, 10, false, false, 0), // invalid date, month out of range
-        (2023, 9, 31, false, false, 30),  // invalid date, day out of range
-        (2023, 9, 0, false, false, 30),   // invalid date, day out of range
+        (2023, 6, 14, true, false, 30),               // valid recent date
+        (1970, 1, 1, true, false, 31),                // valid epoch date
+        (2024, 2, 29, true, true, 29),                // valid leap day
+        (2024, 3, 1, true, true, 31),                 // valid leap year
+        (1969, 12, 31, false, false, 31),             // invalid before epoch
+        (2023, 2, 29, false, false, 28),              // invalid date
+        (2023, 0, 10, false, false, 0),               // invalid date, month out of range
+        (2023, 13, 10, false, false, 0),              // invalid date, month out of range
+        (2023, 9, 31, false, false, 30),              // invalid date, day out of range
+        (2023, 9, 0, false, false, 30),               // invalid date, day out of range
         (UTCDate::MAX_YEAR, 11, 09, true, false, 30), // valid max date
         (UTCDate::MAX_YEAR, 12, 31, false, false, 0), // invalid max date
         (UTCDate::MAX_YEAR, u8::MAX, u8::MAX, false, false, 0), // invalid max date
@@ -94,7 +97,6 @@ fn test_date_iso_conversions() -> Result<()> {
                 assert!(!case_is_valid);
             }
         }
-
     }
 
     Ok(())
@@ -102,8 +104,8 @@ fn test_date_iso_conversions() -> Result<()> {
 
 #[test]
 fn test_date_transformations() -> Result<()> {
-    use utc_dt::time::UTCTransformations;
     use utc_dt::time::UTCTimestamp;
+    use utc_dt::time::UTCTransformations;
 
     let test_cases = [
         (UTCTimestamp::from_secs(0), 1970, 1, 1),
@@ -111,7 +113,12 @@ fn test_date_transformations() -> Result<()> {
         (UTCTimestamp::from_secs(1686700800), 2023, 6, 14),
         (UTCTimestamp::from_secs(32928076800), 3013, 6, 14),
         (UTCTimestamp::from_secs(371085174288000), 11761191, 1, 20),
-        (UTCTimestamp::from_secs(u64::MAX - u64::MAX % SECONDS_PER_DAY), 584554051223, 11, 9),
+        (
+            UTCTimestamp::from_secs(u64::MAX - u64::MAX % SECONDS_PER_DAY),
+            584554051223,
+            11,
+            9,
+        ),
     ];
 
     let mut hash_set: HashSet<UTCDate> = HashSet::new();
@@ -157,7 +164,10 @@ fn test_date_transformations() -> Result<()> {
         // test hashing
         hash_set.insert(date_from_components);
         assert!(hash_set.contains(&date_from_components));
-        assert_eq!(&date_from_components, hash_set.get(&date_from_components).unwrap());
+        assert_eq!(
+            &date_from_components,
+            hash_set.get(&date_from_components).unwrap()
+        );
     }
 
     // test transform from system time

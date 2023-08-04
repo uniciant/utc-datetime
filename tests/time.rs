@@ -3,12 +3,20 @@ use std::collections::HashSet;
 
 use anyhow::Result;
 
-use utc_dt::{time::{UTCDay, UTCTimeOfDay, UTCTimestamp, UTCTransformations}, constants::{NANOS_PER_SECOND, SECONDS_PER_DAY, MICROS_PER_DAY, MILLIS_PER_DAY, NANOS_PER_DAY}};
+use utc_dt::{
+    constants::{MICROS_PER_DAY, MILLIS_PER_DAY, NANOS_PER_DAY, NANOS_PER_SECOND, SECONDS_PER_DAY},
+    time::{UTCDay, UTCTimeOfDay, UTCTimestamp, UTCTransformations},
+};
 
 #[test]
 fn test_utc_timestamp() -> Result<()> {
     let test_cases = [
-        (UTCTimestamp::from_nanos(0), UTCDay::ZERO, UTCTimeOfDay::try_from_secs(0)?, 4),
+        (
+            UTCTimestamp::from_nanos(0),
+            UTCDay::ZERO,
+            UTCTimeOfDay::try_from_secs(0)?,
+            4,
+        ),
         (
             UTCTimestamp::from_nanos(123456789),
             UTCDay::ZERO,
@@ -58,7 +66,10 @@ fn test_utc_timestamp() -> Result<()> {
         // test timestamp to/from durations
         let duration_from_timestamp = timestamp.to_duration();
         let timestamp_from_duration = UTCTimestamp::from_duration(duration_from_timestamp);
-        assert_eq!(timestamp_from_duration, UTCTimestamp::from(duration_from_timestamp));
+        assert_eq!(
+            timestamp_from_duration,
+            UTCTimestamp::from(duration_from_timestamp)
+        );
         assert_eq!(timestamp_from_duration, expected_timestamp);
         assert_eq!(duration_from_timestamp, expected_timestamp.as_duration());
         // test unit conversions
@@ -77,7 +88,10 @@ fn test_utc_timestamp() -> Result<()> {
         // test hashing
         hash_set.insert(expected_timestamp);
         assert!(hash_set.contains(&expected_timestamp));
-        assert_eq!(&expected_timestamp, hash_set.get(&expected_timestamp).unwrap());
+        assert_eq!(
+            &expected_timestamp,
+            hash_set.get(&expected_timestamp).unwrap()
+        );
     }
 
     // test from system time
@@ -136,7 +150,10 @@ fn test_utc_day() -> Result<()> {
     let mut hash_set: HashSet<UTCDay> = HashSet::new();
     hash_set.insert(utc_day_from_system_time);
     assert!(hash_set.contains(&utc_day_from_system_time));
-    assert_eq!(&utc_day_from_system_time, hash_set.get(&utc_day_from_system_time).unwrap());
+    assert_eq!(
+        &utc_day_from_system_time,
+        hash_set.get(&utc_day_from_system_time).unwrap()
+    );
     // test default, clone & copy, ord
     assert_eq!(UTCDay::default().clone(), UTCDay::ZERO);
     let utc_day_copy = utc_day_from_system_time;
@@ -155,7 +172,10 @@ fn test_utc_tod() -> Result<()> {
     let subsec_ns = tod_from_timestamp.as_subsec_ns();
     let tod_from_hhmmss = UTCTimeOfDay::try_from_hhmmss(hrs, mins, secs, subsec_ns)?;
     assert_eq!(tod_from_hhmmss, tod_from_timestamp);
-    assert_eq!(unsafe { UTCTimeOfDay::from_hhmmss_unchecked(hrs, mins, secs, subsec_ns) }, tod_from_timestamp);
+    assert_eq!(
+        unsafe { UTCTimeOfDay::from_hhmmss_unchecked(hrs, mins, secs, subsec_ns) },
+        tod_from_timestamp
+    );
     assert!(UTCTimeOfDay::try_from_hhmmss(25, mins, secs, subsec_ns).is_err());
     assert!(UTCTimeOfDay::try_from_hhmmss(24, 0, 0, 0).is_err());
     assert!(UTCTimeOfDay::try_from_hhmmss(23, 59, 59, (NANOS_PER_SECOND - 1) as u32).is_ok());
@@ -164,13 +184,20 @@ fn test_utc_tod() -> Result<()> {
     let iso_from_tod = tod_from_timestamp.as_iso_tod(Some(9));
     let tod_from_iso = UTCTimeOfDay::try_from_iso_tod(&iso_from_tod)?;
     assert_eq!(tod_from_iso, tod_from_timestamp);
-    assert_eq!(UTCTimeOfDay::try_from_iso_tod("T00:00:00Z")?, UTCTimeOfDay::ZERO);
-    assert_eq!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.999999999Z")?, UTCTimeOfDay::MAX);
+    assert_eq!(
+        UTCTimeOfDay::try_from_iso_tod("T00:00:00Z")?,
+        UTCTimeOfDay::ZERO
+    );
+    assert_eq!(
+        UTCTimeOfDay::try_from_iso_tod("T23:59:59.999999999Z")?,
+        UTCTimeOfDay::MAX
+    );
     assert!(UTCTimeOfDay::try_from_iso_tod("Taa:59:59.999999999Z").is_err()); // invalid hour
     assert!(UTCTimeOfDay::try_from_iso_tod("T23:aa:59.999999999Z").is_err()); // invalid mins
     assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:aa.999999999Z").is_err()); // invalid secs
     assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.a99999999Z").is_err()); // invalid subsec
     assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.9999999990Z").is_err()); // invalid precision
+
     // test unit conversions
     let secs_from_tod = tod_from_timestamp.as_secs();
     let millis_from_tod = tod_from_timestamp.as_millis();
@@ -200,6 +227,9 @@ fn test_utc_tod() -> Result<()> {
     let mut hash_set: HashSet<UTCTimeOfDay> = HashSet::new();
     hash_set.insert(tod_from_timestamp);
     assert!(hash_set.contains(&tod_from_timestamp));
-    assert_eq!(&tod_from_timestamp, hash_set.get(&tod_from_timestamp).unwrap());
+    assert_eq!(
+        &tod_from_timestamp,
+        hash_set.get(&tod_from_timestamp).unwrap()
+    );
     Ok(())
 }
