@@ -9,6 +9,7 @@ use utc_dt::{
 };
 
 #[test]
+#[cfg(feature = "std")]
 fn test_utc_timestamp() -> Result<()> {
     let test_cases = [
         (
@@ -111,6 +112,7 @@ fn test_utc_timestamp() -> Result<()> {
 }
 
 #[test]
+#[cfg(feature = "std")]
 fn test_utc_day() -> Result<()> {
     // test from system time
     let utc_day_from_system_time = UTCDay::try_from_system_time()?;
@@ -164,6 +166,8 @@ fn test_utc_day() -> Result<()> {
 }
 
 #[test]
+#[cfg(feature = "std")]
+
 fn test_utc_tod() -> Result<()> {
     let timestamp_from_system_time = UTCTimestamp::try_from_system_time()?;
     let tod_from_timestamp = UTCTimeOfDay::from_timestamp(timestamp_from_system_time);

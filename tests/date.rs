@@ -5,7 +5,7 @@ use anyhow::Result;
 use utc_dt::{
     constants::{MICROS_PER_DAY, MILLIS_PER_DAY, NANOS_PER_DAY, SECONDS_PER_DAY},
     date::UTCDate,
-    time::UTCDay,
+    time::{UTCDay, UTCTimestamp, UTCTransformations},
 };
 
 #[test]
@@ -44,8 +44,6 @@ fn test_date_from_components() -> Result<()> {
 
 #[test]
 fn test_date_from_day() -> Result<()> {
-    use utc_dt::time::UTCDay;
-
     let test_cases = [
         (UTCDay::ZERO, 1970, 1, 1),
         (UTCDay::try_from_u64(30)?, 1970, 1, 31),
@@ -68,6 +66,7 @@ fn test_date_from_day() -> Result<()> {
 }
 
 #[test]
+#[cfg(feature = "std")]
 fn test_date_iso_conversions() -> Result<()> {
     let test_cases = [
         (2023, 6, 14, true, "2023-06-14"),   // valid recent date
@@ -99,14 +98,27 @@ fn test_date_iso_conversions() -> Result<()> {
         }
     }
 
+    // test transform from system time
+    let date_from_system_time = UTCDate::try_from_system_time()?;
+    assert!(date_from_system_time >= UTCDate::MIN);
+    assert!(date_from_system_time <= UTCDate::MAX);
+    // test debug & display
+    println!("{:?}:{date_from_system_time}", date_from_system_time);
+    // test default, clone & copy, ord
+    assert_eq!(UTCDate::default().clone(), UTCDate::MIN);
+    let date_copy = date_from_system_time;
+    assert_eq!(date_copy, date_from_system_time);
+    assert_eq!(UTCDate::MIN, date_copy.min(UTCDate::MIN));
+    assert_eq!(UTCDate::MAX, date_copy.max(UTCDate::MAX));
+    // test limits
+    assert_eq!(UTCDate::from_day(UTCDay::MAX), UTCDate::MAX);
+    assert_eq!(UTCDate::from_day(UTCDay::ZERO), UTCDate::MIN);
+
     Ok(())
 }
 
 #[test]
 fn test_date_transformations() -> Result<()> {
-    use utc_dt::time::UTCTimestamp;
-    use utc_dt::time::UTCTransformations;
-
     let test_cases = [
         (UTCTimestamp::from_secs(0), 1970, 1, 1),
         (UTCTimestamp::from_secs(2592000), 1970, 1, 31),
@@ -169,22 +181,6 @@ fn test_date_transformations() -> Result<()> {
             hash_set.get(&date_from_components).unwrap()
         );
     }
-
-    // test transform from system time
-    let date_from_system_time = UTCDate::try_from_system_time()?;
-    assert!(date_from_system_time >= UTCDate::MIN);
-    assert!(date_from_system_time <= UTCDate::MAX);
-    // test debug & display
-    println!("{:?}:{date_from_system_time}", date_from_system_time);
-    // test default, clone & copy, ord
-    assert_eq!(UTCDate::default().clone(), UTCDate::MIN);
-    let date_copy = date_from_system_time;
-    assert_eq!(date_copy, date_from_system_time);
-    assert_eq!(UTCDate::MIN, date_copy.min(UTCDate::MIN));
-    assert_eq!(UTCDate::MAX, date_copy.max(UTCDate::MAX));
-    // test limits
-    assert_eq!(UTCDate::from_day(UTCDay::MAX), UTCDate::MAX);
-    assert_eq!(UTCDate::from_day(UTCDay::ZERO), UTCDate::MIN);
 
     Ok(())
 }

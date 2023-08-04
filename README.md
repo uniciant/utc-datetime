@@ -89,6 +89,7 @@ See [docs.rs](https://docs.rs/utc-dt) for the API reference.
     // UTC Time of Day subsecond component (in nanoseconds)
     let subsec_ns = utc_tod.as_subsec_ns();
     // Parse a UTC Time of Day from an ISO 8601 time string `(Thh:mm:ssZ)`
+    // Not available for #![no_std]
     let utc_tod = UTCTimeOfDay::try_from_iso_tod("T10:18:08.903Z").unwrap();
     // Get a time of day string formatted according to ISO 8601 `(Thh:mm:ssZ)`
     // Not available for #![no_std]
@@ -110,6 +111,7 @@ See [docs.rs](https://docs.rs/utc-dt) for the API reference.
     // UTC Day from UTC Date
     let utc_day = utc_date.as_day();
     // Parse a UTC Date from an ISO 8601 date string `(YYYY-MM-DD)`
+    // Not available for #![no_std]
     let utc_date = UTCDate::try_from_iso_date("2023-06-15").unwrap();
     // Get date string formatted according to ISO 8601 `(YYYY-MM-DD)`
     // Not available for #![no_std]
@@ -122,6 +124,7 @@ See [docs.rs](https://docs.rs/utc-dt) for the API reference.
     let (utc_date, time_of_day_ns) = (utc_datetime.as_date(), utc_datetime.as_tod()); // OR
     let (utc_date, time_of_day_ns) = utc_datetime.as_components();
     // Parse a UTC Datetime from an ISO 8601 datetime string `(YYYY-MM-DDThh:mm:ssZ)`
+    // Not available for #![no_std]
     let utc_datetime = UTCDatetime::try_from_iso_datetime("2023-06-15T10:18:08.903Z").unwrap();
     // Get UTC datetime string formatted according to ISO 8601 `(YYYY-MM-DDThh:mm:ssZ)`
     // Not available for #![no_std]

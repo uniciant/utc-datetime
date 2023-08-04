@@ -221,6 +221,7 @@ impl UTCDate {
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
+    #[cfg(feature = "std")]
     pub fn try_from_iso_date(iso: &str) -> Result<Self> {
         // handle slice
         let (year_str, rem) = iso.split_at(4); // remainder = "-MM-DD"

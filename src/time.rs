@@ -657,6 +657,7 @@ impl UTCTimeOfDay {
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
+    #[cfg(feature = "std")]
     pub fn try_from_iso_tod(iso: &str) -> Result<Self> {
         let (hour_str, rem) = iso[1..].split_at(2); // remainder = ":mm:ss.nnnZ"
         let (minute_str, rem) = rem[1..].split_at(2); // remainder = ":ss.nnnZ"
