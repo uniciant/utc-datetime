@@ -3,7 +3,7 @@ use std::collections::HashSet;
 
 use anyhow::Result;
 
-use utc_dt::{date::UTCDate, constants::{SECONDS_PER_DAY, MILLIS_PER_DAY, MICROS_PER_DAY, NANOS_PER_DAY}};
+use utc_dt::{date::UTCDate, constants::{SECONDS_PER_DAY, MILLIS_PER_DAY, MICROS_PER_DAY, NANOS_PER_DAY}, time::UTCDay};
 
 #[test]
 fn test_date_from_components() -> Result<()> {
@@ -172,6 +172,9 @@ fn test_date_transformations() -> Result<()> {
     assert_eq!(date_copy, date_from_system_time);
     assert_eq!(UTCDate::MIN, date_copy.min(UTCDate::MIN));
     assert_eq!(UTCDate::MAX, date_copy.max(UTCDate::MAX));
+    // test limits
+    assert_eq!(UTCDate::from_day(UTCDay::MAX), UTCDate::MAX);
+    assert_eq!(UTCDate::from_day(UTCDay::ZERO), UTCDate::MIN);
 
     Ok(())
 }
