@@ -200,6 +200,7 @@ use core::{
     time::Duration,
 };
 
+#[cfg(feature = "std")]
 use anyhow::Result;
 
 use date::UTCDate;
