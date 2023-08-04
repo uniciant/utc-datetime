@@ -2,12 +2,15 @@
 //!
 //! Implements core time concepts via UTC Timestamps and UTC Days.
 
-use core::{time::Duration, fmt::{Display, Formatter}};
+use core::{
+    fmt::{Display, Formatter},
+    time::Duration,
+};
 
 #[cfg(feature = "std")]
 use std::time::SystemTime;
 
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 
 use crate::constants::*;
 
@@ -57,7 +60,7 @@ impl UTCTimestamp {
     /// Create a UTC Timestamp from UTC day
     #[inline]
     pub const fn from_day(day: UTCDay) -> Self {
-        let secs = day.0 as u64 * SECONDS_PER_DAY;
+        let secs = day.0 * SECONDS_PER_DAY;
         Self(Duration::from_secs(secs))
     }
 
@@ -98,7 +101,8 @@ impl UTCTimestamp {
     /// Get the UTC time-of-day in nanoseconds.
     #[inline]
     pub const fn as_tod(&self) -> UTCTimeOfDay {
-        let ns = ((self.0.as_secs() % SECONDS_PER_DAY) * NANOS_PER_SECOND) + (self.0.subsec_nanos() as u64);
+        let ns = ((self.0.as_secs() % SECONDS_PER_DAY) * NANOS_PER_SECOND)
+            + (self.0.subsec_nanos() as u64);
         unsafe { UTCTimeOfDay::from_nanos_unchecked(ns) }
     }
 
@@ -311,17 +315,7 @@ where
 /// ## Safety
 /// Unchecked methods are provided for use in hot paths requiring high levels of optimisation.
 /// These methods assume valid input.
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Default,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct UTCDay(u64);
 
 impl UTCDay {
@@ -431,7 +425,7 @@ impl TryFrom<u64> for UTCDay {
     type Error = anyhow::Error;
 
     fn try_from(value: u64) -> core::result::Result<Self, Self::Error> {
-        Ok(Self::try_from_u64(value)?)
+        Self::try_from_u64(value)
     }
 }
 
@@ -479,23 +473,20 @@ impl From<UTCTimestamp> for UTCDay {
 /// ## Safety
 /// Unchecked methods are provided for use in hot paths requiring high levels of optimisation.
 /// These methods assume valid input.
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Default,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct UTCTimeOfDay(u64);
 
 impl Display for UTCTimeOfDay {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let (hrs, mins, secs) = self.as_hhmmss();
-        write!(f, "T{:02}:{:02}:{:02}.{:09}Z", hrs, mins, secs, self.as_subsec_ns())
+        write!(
+            f,
+            "T{:02}:{:02}:{:02}.{:09}Z",
+            hrs,
+            mins,
+            secs,
+            self.as_subsec_ns()
+        )
     }
 }
 
@@ -652,7 +643,7 @@ impl UTCTimeOfDay {
     /// Return subsecond component of time of day (in nanoseconds)
     #[inline]
     pub const fn as_subsec_ns(&self) -> u32 {
-        (self.0 % NANOS_PER_SECOND)  as u32
+        (self.0 % NANOS_PER_SECOND) as u32
     }
 
     /// Time of day from UTC timestamp
@@ -680,7 +671,10 @@ impl UTCTimeOfDay {
             let subsec_str = &rem[1..(rem_len - 1)]; // "nnn"
             let precision: u32 = subsec_str.len() as u32;
             if precision > 9 {
-                bail!("Cannot parse ISO time-of-day: Precision ({}) exceeds maximum of 9", precision);
+                bail!(
+                    "Cannot parse ISO time-of-day: Precision ({}) exceeds maximum of 9",
+                    precision
+                );
             }
             if precision == 0 {
                 0

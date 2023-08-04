@@ -192,12 +192,15 @@ pub mod time;
 #[rustfmt::skip]
 pub mod constants;
 
-use core::{time::Duration, fmt::{Display, Formatter}};
+use core::{
+    fmt::{Display, Formatter},
+    time::Duration,
+};
 
 use anyhow::Result;
 
 use date::UTCDate;
-use time::{UTCTimestamp, UTCTransformations, UTCTimeOfDay};
+use time::{UTCTimeOfDay, UTCTimestamp, UTCTransformations};
 
 /// UTC Datetime.
 ///
@@ -236,7 +239,10 @@ impl UTCDatetime {
     /// The minimum UTC datetime.
     ///
     /// Equivalent to the unix epoch, 1970.
-    pub const MIN: UTCDatetime = Self { date: UTCDate::MIN, tod: UTCTimeOfDay::ZERO };
+    pub const MIN: UTCDatetime = Self {
+        date: UTCDate::MIN,
+        tod: UTCTimeOfDay::ZERO,
+    };
 
     /// The maximum UTC datetime.
     ///
@@ -244,15 +250,15 @@ impl UTCDatetime {
     ///
     /// Maximum datetime support is limited by the maximum `UTCTimestamp`.
     /// UTCDatetime can physically store dates up to `December 31, 1_717_986_918_399, T23:59:59.999999999Z`
-    pub const MAX: UTCDatetime = Self { date: UTCDate::MAX, tod: unsafe { UTCTimeOfDay::from_nanos_unchecked(25215999999999) }};
+    pub const MAX: UTCDatetime = Self {
+        date: UTCDate::MAX,
+        tod: unsafe { UTCTimeOfDay::from_nanos_unchecked(25215999999999) },
+    };
 
     /// Create a datetime frome date and time-of-day components.
     #[inline]
     pub const fn from_components(date: UTCDate, tod: UTCTimeOfDay) -> Self {
-        Self {
-            date,
-            tod,
-        }
+        Self { date, tod }
     }
 
     /// Get copy of the internal date and time-of-day components

@@ -4,9 +4,12 @@
 //! proleptic Gregorian Calendar (the *civil* calendar),
 //! to create UTC dates.
 
-use core::{time::Duration, fmt::{Display, Formatter}};
+use core::{
+    fmt::{Display, Formatter},
+    time::Duration,
+};
 
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 
 use crate::time::{UTCDay, UTCTimestamp, UTCTransformations};
 
@@ -65,7 +68,12 @@ impl UTCDate {
     /// The minimum UTC Date supported
     ///
     /// Equal to the epoch at Jan 1, 1970.
-    pub const MIN: Self = Self { era: 4, yoe: 369, month: 1, day: 1 };
+    pub const MIN: Self = Self {
+        era: 4,
+        yoe: 369,
+        month: 1,
+        day: 1,
+    };
 
     /// The maximum UTC Date supported.
     ///
@@ -73,7 +81,12 @@ impl UTCDate {
     ///
     /// Maximum date support is limited by the maximum `UTCTimestamp`.
     /// UTCDate can physically store dates up to `December 31, 1_717_986_918_399`
-    pub const MAX: Self = Self { era: 1_461_385_128, yoe: 23, month: 11, day: 9 };
+    pub const MAX: Self = Self {
+        era: 1_461_385_128,
+        yoe: 23,
+        month: 11,
+        day: 9,
+    };
 
     /// The maximum year supported
     pub const MAX_YEAR: u64 = 584_554_051_223;
@@ -91,12 +104,17 @@ impl UTCDate {
         let year = year - (month <= 2) as u64;
         let era = year / 400;
         let yoe = year - (era * 400);
-        Self { era: era as u32, yoe: yoe as u16, month, day }
+        Self {
+            era: era as u32,
+            yoe: yoe as u16,
+            month,
+            day,
+        }
     }
 
     /// Try to create a UTC Date from provided year, month and day.
     pub fn try_from_components(year: u64, month: u8, day: u8) -> Result<Self> {
-        if year < Self::MIN_YEAR || year > Self::MAX_YEAR {
+        if !(Self::MIN_YEAR..=Self::MAX_YEAR).contains(&year) {
             bail!("Year out of range! (year: {:04})", year);
         }
         if month == 0 || month > 12 {
@@ -129,7 +147,12 @@ impl UTCDate {
         let mp = ((5 * doy) + 2) / 153;
         let day = (doy - (((153 * mp) + 2) / 5) + 1) as u8;
         let month = if mp < 10 { mp + 3 } else { mp - 9 } as u8;
-        Self { era, yoe: yoe as u16, month, day }
+        Self {
+            era,
+            yoe: yoe as u16,
+            month,
+            day,
+        }
     }
 
     /// Get the days since the epoch from the UTC Date
@@ -145,7 +168,7 @@ impl UTCDate {
         let yoe = self.yoe as u32;
         let doy = ((153 * (if m > 2 { m - 3 } else { m + 9 }) + 2) / 5) + d - 1;
         let doe = (yoe * 365) + (yoe / 4) - (yoe / 100) + doy as u32;
-        let days = (era as u64 * 146097)  + doe as u64 - 719468;
+        let days = (era as u64 * 146097) + doe as u64 - 719468;
         unsafe { UTCDay::from_u64_unchecked(days) }
     }
 
@@ -163,7 +186,7 @@ impl UTCDate {
     /// Returns tuple: `(year: u64, month: u8, day: u8)`
     #[inline]
     pub const fn to_components(self) -> (u64, u8, u8) {
-        let year = self.yoe as u64 + (self.era as u64 * 400) + (self.month <=2) as u64;
+        let year = self.yoe as u64 + (self.era as u64 * 400) + (self.month <= 2) as u64;
         (year, self.month, self.day)
     }
 
@@ -183,7 +206,7 @@ impl UTCDate {
         match self.month {
             1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
             4 | 6 | 9 | 11 => 30,
-            2 | _ => {
+            _ => {
                 if self.is_leap_year() {
                     29
                 } else {
