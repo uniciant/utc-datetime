@@ -206,9 +206,9 @@ impl From<UTCDay> for UTCTimestamp {
 /// let utc_duration: Duration = utc_day.as_duration();
 /// let utc_timestamp: UTCTimestamp = utc_date.as_timestamp();
 /// let utc_secs: u64 = utc_date.as_secs();
-/// let utc_millis: u64 = utc_datetime.as_millis();
-/// let utc_micros: u64 = utc_day.as_micros();
-/// let utc_nanos: u64 = utc_date.as_nanos();
+/// let utc_millis: u128 = utc_datetime.as_millis();
+/// let utc_micros: u128 = utc_day.as_micros();
+/// let utc_nanos: u128 = utc_date.as_nanos();
 /// ```
 ///
 pub trait UTCTransformations
@@ -300,8 +300,10 @@ where
 /// ## Examples
 /// ```rust,ignore
 /// // UTC Day from an integer
-/// let utc_day = UTCDay::from(19523); // OR
-/// let utc_day = UTCDay::from_u32(19523);
+/// let utc_day = UTCDay::try_from_u64(19523).unwrap();
+/// // Integer from UTC Day
+/// let day_u64 = utc_day.as_u64(); // OR
+/// let day_u64 = utc_day.to_u64();
 /// // Use UTC Day to get the weekday
 /// let weekday = utc_day.as_weekday();
 /// ```

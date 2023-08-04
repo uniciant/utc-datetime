@@ -1,4 +1,9 @@
 //! # UTC Datetime
+//!
+//! [![crates.io](https://img.shields.io/crates/v/utc-dt?style=flat-square&logo=rust)](https://crates.io/crates/utc-dt)
+//! [![license](https://img.shields.io/badge/license-Apache--2.0_OR_MIT-blue?style=flat-square)](#license)
+//! [![build status](https://img.shields.io/github/actions/workflow/status/uniciant/utc-datetime/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/uniciant/utc-datetime/actions)
+//!
 //! Simple, fast and small UTC date, timestamp and datetime library for Rust.
 //!
 //! UTC Datetime aims to be ergonomic and user friendly, focused on core features.
@@ -65,8 +70,10 @@
 //!     let utc_timestamp = UTCTimestamp::from_day_and_tod(utc_day, utc_tod);
 //!
 //!     // UTC Day from an integer
-//!     let utc_day = UTCDay::from(19523); // OR
-//!     let utc_day = UTCDay::from_u32(19523);
+//!     let utc_day = UTCDay::try_from_u64(19523).unwrap();
+//!     // Integer from UTC Day
+//!     let day_u64 = utc_day.as_u64(); // OR
+//!     let day_u64 = utc_day.to_u64();
 //!     // Use UTC Day to get the weekday
 //!     let weekday = utc_day.as_weekday();
 //!
@@ -159,9 +166,9 @@
 //!         let utc_duration: Duration = utc_day.as_duration();
 //!         let utc_timestamp: UTCTimestamp = utc_date.as_timestamp();
 //!         let utc_secs: u64 = utc_date.as_secs();
-//!         let utc_millis: u64 = utc_datetime.as_millis();
-//!         let utc_micros: u64 = utc_day.as_micros();
-//!         let utc_nanos: u64 = utc_date.as_nanos();
+//!         let utc_millis: u128 = utc_datetime.as_millis();
+//!         let utc_micros: u128 = utc_day.as_micros();
+//!         let utc_nanos: u128 = utc_date.as_nanos();
 //!     }
 //! ```
 //!
