@@ -65,7 +65,7 @@ impl UTCDate {
     /// The minimum UTC Date supported
     ///
     /// Equal to the epoch at Jan 1, 1970.
-    pub const MIN: Self = Self { era: 4, yoe: 370, month: 1, day: 1 };
+    pub const MIN: Self = Self { era: 4, yoe: 369, month: 1, day: 1 };
 
     /// The maximum UTC Date supported.
     ///
