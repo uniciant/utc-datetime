@@ -9,7 +9,6 @@ use utc_dt::{
 };
 
 #[test]
-#[cfg(feature = "std")]
 fn test_utc_timestamp() -> Result<()> {
     let test_cases = [
         (
@@ -96,15 +95,18 @@ fn test_utc_timestamp() -> Result<()> {
     }
 
     // test from system time
-    let timestamp_from_system_time = UTCTimestamp::try_from_system_time()?;
-    assert!(timestamp_from_system_time <= UTCTimestamp::MAX);
-    assert!(timestamp_from_system_time >= UTCTimestamp::ZERO);
+    #[cfg(feature = "std")]
+    let timestamp = UTCTimestamp::try_from_system_time()?;
+    #[cfg(not(feature = "std"))]
+    let timestamp = UTCTimestamp::from_millis(1686824288903);
+    assert!(timestamp <= UTCTimestamp::MAX);
+    assert!(timestamp >= UTCTimestamp::ZERO);
     // test debug
-    println!("{:?}", timestamp_from_system_time);
+    println!("{:?}", timestamp);
     // test default, clone & copy, ord
     assert_eq!(UTCTimestamp::default().clone(), UTCTimestamp::ZERO);
-    let timestamp_copy = timestamp_from_system_time;
-    assert_eq!(timestamp_copy, timestamp_from_system_time);
+    let timestamp_copy = timestamp;
+    assert_eq!(timestamp_copy, timestamp);
     assert_eq!(UTCTimestamp::ZERO, timestamp_copy.min(UTCTimestamp::ZERO));
     assert_eq!(UTCTimestamp::MAX, timestamp_copy.max(UTCTimestamp::MAX));
 
@@ -112,65 +114,69 @@ fn test_utc_timestamp() -> Result<()> {
 }
 
 #[test]
-#[cfg(feature = "std")]
 fn test_utc_day() -> Result<()> {
     // test from system time
-    let utc_day_from_system_time = UTCDay::try_from_system_time()?;
-    assert!(utc_day_from_system_time <= UTCDay::MAX);
-    assert!(utc_day_from_system_time >= UTCDay::ZERO);
+    #[cfg(feature = "std")]
+    let utc_day = UTCDay::try_from_system_time()?;
+    #[cfg(not(feature = "std"))]
+    let utc_day = UTCDay::from_millis(1686824288903);
+    assert!(utc_day <= UTCDay::MAX);
+    assert!(utc_day >= UTCDay::ZERO);
     // test debug
-    println!("{:?} (days since epoch)", utc_day_from_system_time);
+    println!("{:?} (days since epoch)", utc_day);
     // test from u64
     let u64_from_max = UTCDay::MAX.to_u64();
     let u64_invalid = u64_from_max + 1;
     assert!(UTCDay::try_from_u64(u64_from_max).is_ok());
     assert!(UTCDay::try_from(u64_invalid).is_err());
     // test from duration
-    let duration_from_utc_day = utc_day_from_system_time.as_duration();
+    let duration_from_utc_day = utc_day.as_duration();
     let utc_day_from_duration = UTCDay::from_duration(duration_from_utc_day);
-    assert_eq!(utc_day_from_duration, utc_day_from_system_time);
+    assert_eq!(utc_day_from_duration, utc_day);
     assert_eq!(utc_day_from_duration, UTCDay::from(duration_from_utc_day));
     // test from timestamp
-    let timestamp_from_utc_day = utc_day_from_system_time.as_timestamp();
+    let timestamp_from_utc_day = utc_day.as_timestamp();
     let utc_day_from_timestamp = UTCDay::from_timestamp(timestamp_from_utc_day);
-    assert_eq!(utc_day_from_timestamp, utc_day_from_system_time);
+    assert_eq!(utc_day_from_timestamp, utc_day);
     assert_eq!(utc_day_from_timestamp, UTCDay::from(timestamp_from_utc_day));
     // test unit conversions
-    let secs_from_utc_day = utc_day_from_system_time.as_secs();
-    let millis_from_utc_day = utc_day_from_system_time.as_millis() as u64;
-    let micros_from_utc_day = utc_day_from_system_time.as_micros() as u64;
-    let nanos_from_utc_day = utc_day_from_system_time.as_nanos() as u64;
+    let secs_from_utc_day = utc_day.as_secs();
+    let millis_from_utc_day = utc_day.as_millis() as u64;
+    let micros_from_utc_day = utc_day.as_micros() as u64;
+    let nanos_from_utc_day = utc_day.as_nanos() as u64;
     let utc_day_from_secs = UTCDay::from_secs(secs_from_utc_day);
     let utc_day_from_millis = UTCDay::from_millis(millis_from_utc_day);
     let utc_day_from_micros = UTCDay::from_micros(micros_from_utc_day);
     let utc_day_from_nanos = UTCDay::from_nanos(nanos_from_utc_day);
-    assert_eq!(utc_day_from_secs, utc_day_from_system_time);
-    assert!(utc_day_from_millis <= utc_day_from_system_time);
-    assert!(utc_day_from_micros <= utc_day_from_system_time);
-    assert!(utc_day_from_nanos <= utc_day_from_system_time);
+    assert_eq!(utc_day_from_secs, utc_day);
+    assert!(utc_day_from_millis <= utc_day);
+    assert!(utc_day_from_micros <= utc_day);
+    assert!(utc_day_from_nanos <= utc_day);
     // test hashing
     let mut hash_set: HashSet<UTCDay> = HashSet::new();
-    hash_set.insert(utc_day_from_system_time);
-    assert!(hash_set.contains(&utc_day_from_system_time));
+    hash_set.insert(utc_day);
+    assert!(hash_set.contains(&utc_day));
     assert_eq!(
-        &utc_day_from_system_time,
-        hash_set.get(&utc_day_from_system_time).unwrap()
+        &utc_day,
+        hash_set.get(&utc_day).unwrap()
     );
     // test default, clone & copy, ord
     assert_eq!(UTCDay::default().clone(), UTCDay::ZERO);
-    let utc_day_copy = utc_day_from_system_time;
-    assert_eq!(utc_day_copy, utc_day_from_system_time);
+    let utc_day_copy = utc_day;
+    assert_eq!(utc_day_copy, utc_day);
     assert_eq!(UTCDay::ZERO, utc_day_copy.min(UTCDay::ZERO));
     assert_eq!(UTCDay::MAX, utc_day_copy.max(UTCDay::MAX));
     Ok(())
 }
 
 #[test]
-#[cfg(feature = "std")]
-
 fn test_utc_tod() -> Result<()> {
-    let timestamp_from_system_time = UTCTimestamp::try_from_system_time()?;
-    let tod_from_timestamp = UTCTimeOfDay::from_timestamp(timestamp_from_system_time);
+    // test from system time
+    #[cfg(feature = "std")]
+    let timestamp = UTCTimestamp::try_from_system_time()?;
+    #[cfg(not(feature = "std"))]
+    let timestamp = UTCTimestamp::from_millis(1686824288903);
+    let tod_from_timestamp = UTCTimeOfDay::from_timestamp(timestamp);
     // test from hhmmss
     let (hrs, mins, secs) = tod_from_timestamp.as_hhmmss();
     let subsec_ns = tod_from_timestamp.as_subsec_ns();
@@ -185,22 +191,25 @@ fn test_utc_tod() -> Result<()> {
     assert!(UTCTimeOfDay::try_from_hhmmss(23, 59, 59, (NANOS_PER_SECOND - 1) as u32).is_ok());
     assert!(UTCTimeOfDay::try_from_hhmmss(u8::MAX, u8::MAX, u8::MAX, u32::MAX).is_err());
     // test iso conversions
-    let iso_from_tod = tod_from_timestamp.as_iso_tod(Some(9));
-    let tod_from_iso = UTCTimeOfDay::try_from_iso_tod(&iso_from_tod)?;
-    assert_eq!(tod_from_iso, tod_from_timestamp);
-    assert_eq!(
-        UTCTimeOfDay::try_from_iso_tod("T00:00:00Z")?,
-        UTCTimeOfDay::ZERO
-    );
-    assert_eq!(
-        UTCTimeOfDay::try_from_iso_tod("T23:59:59.999999999Z")?,
-        UTCTimeOfDay::MAX
-    );
-    assert!(UTCTimeOfDay::try_from_iso_tod("Taa:59:59.999999999Z").is_err()); // invalid hour
-    assert!(UTCTimeOfDay::try_from_iso_tod("T23:aa:59.999999999Z").is_err()); // invalid mins
-    assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:aa.999999999Z").is_err()); // invalid secs
-    assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.a99999999Z").is_err()); // invalid subsec
-    assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.9999999990Z").is_err()); // invalid precision
+    #[cfg(feature = "std")]
+    {
+        let iso_from_tod = tod_from_timestamp.as_iso_tod(Some(9));
+        let tod_from_iso = UTCTimeOfDay::try_from_iso_tod(&iso_from_tod)?;
+        assert_eq!(tod_from_iso, tod_from_timestamp);
+        assert_eq!(
+            UTCTimeOfDay::try_from_iso_tod("T00:00:00Z")?,
+            UTCTimeOfDay::ZERO
+        );
+        assert_eq!(
+            UTCTimeOfDay::try_from_iso_tod("T23:59:59.999999999Z")?,
+            UTCTimeOfDay::MAX
+        );
+        assert!(UTCTimeOfDay::try_from_iso_tod("Taa:59:59.999999999Z").is_err()); // invalid hour
+        assert!(UTCTimeOfDay::try_from_iso_tod("T23:aa:59.999999999Z").is_err()); // invalid mins
+        assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:aa.999999999Z").is_err()); // invalid secs
+        assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.a99999999Z").is_err()); // invalid subsec
+        assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.9999999990Z").is_err()); // invalid precision
+    }
 
     // test unit conversions
     let secs_from_tod = tod_from_timestamp.as_secs();
