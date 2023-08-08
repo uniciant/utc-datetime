@@ -246,8 +246,8 @@ impl UTCDate {
 }
 
 impl UTCTransformations for UTCDate {
-    fn from_secs(s: u64) -> Self {
-        let utc_day = UTCDay::from_secs(s);
+    fn from_secs(secs: u64) -> Self {
+        let utc_day = UTCDay::from_secs(secs);
         Self::from_day(utc_day)
     }
 
@@ -255,8 +255,8 @@ impl UTCTransformations for UTCDate {
         self.as_day().as_secs()
     }
 
-    fn from_millis(s: u64) -> Self {
-        let utc_day = UTCDay::from_millis(s);
+    fn from_millis(millis: u64) -> Self {
+        let utc_day = UTCDay::from_millis(millis);
         Self::from_day(utc_day)
     }
 
@@ -264,8 +264,8 @@ impl UTCTransformations for UTCDate {
         self.as_day().as_millis()
     }
 
-    fn from_micros(s: u64) -> Self {
-        let utc_day = UTCDay::from_micros(s);
+    fn from_micros(micros: u64) -> Self {
+        let utc_day = UTCDay::from_micros(micros);
         Self::from_day(utc_day)
     }
 
@@ -273,8 +273,8 @@ impl UTCTransformations for UTCDate {
         self.as_day().as_micros()
     }
 
-    fn from_nanos(s: u64) -> Self {
-        let utc_day = UTCDay::from_nanos(s);
+    fn from_nanos(nanos: u64) -> Self {
+        let utc_day = UTCDay::from_nanos(nanos);
         Self::from_day(utc_day)
     }
 

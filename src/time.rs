@@ -114,8 +114,8 @@ impl UTCTimestamp {
 
     /// Create UTC Timestamp from seconds since the Unix Epoch.
     #[inline]
-    pub const fn from_secs(s: u64) -> Self {
-        UTCTimestamp(Duration::from_secs(s))
+    pub const fn from_secs(secs: u64) -> Self {
+        UTCTimestamp(Duration::from_secs(secs))
     }
 
     /// Convert to seconds measured from the Unix Epoch.
@@ -126,8 +126,8 @@ impl UTCTimestamp {
 
     /// Create UTC Timestamp from milliseconds since the Unix Epoch.
     #[inline]
-    pub const fn from_millis(ms: u64) -> Self {
-        UTCTimestamp(Duration::from_millis(ms))
+    pub const fn from_millis(millis: u64) -> Self {
+        UTCTimestamp(Duration::from_millis(millis))
     }
 
     /// Convert to milliseconds measured from the Unix Epoch.
@@ -138,8 +138,8 @@ impl UTCTimestamp {
 
     /// Create UTC Timestamp from microseconds since the Unix Epoch.
     #[inline]
-    pub const fn from_micros(us: u64) -> Self {
-        UTCTimestamp(Duration::from_micros(us))
+    pub const fn from_micros(micros: u64) -> Self {
+        UTCTimestamp(Duration::from_micros(micros))
     }
 
     /// Convert to microseconds measured from the Unix Epoch.
@@ -150,8 +150,8 @@ impl UTCTimestamp {
 
     /// Create UTC Timestamp from nanoseconds since the Unix Epoch.
     #[inline]
-    pub const fn from_nanos(ns: u64) -> Self {
-        UTCTimestamp(Duration::from_nanos(ns))
+    pub const fn from_nanos(nanos: u64) -> Self {
+        UTCTimestamp(Duration::from_nanos(nanos))
     }
 
     /// Convert to seconds measured from the Unix Epoch.
@@ -159,6 +159,8 @@ impl UTCTimestamp {
     pub const fn as_nanos(&self) -> u128 {
         self.0.as_nanos()
     }
+
+
 }
 
 impl From<Duration> for UTCTimestamp {
@@ -234,8 +236,8 @@ where
 
     /// Create from seconds measured from the Unix Epoch.
     #[inline]
-    fn from_secs(s: u64) -> Self {
-        let timestamp = UTCTimestamp::from_secs(s);
+    fn from_secs(secs: u64) -> Self {
+        let timestamp = UTCTimestamp::from_secs(secs);
         Self::from_timestamp(timestamp)
     }
 
@@ -247,8 +249,8 @@ where
 
     /// Create from milliseconds measured from the Unix Epoch.
     #[inline]
-    fn from_millis(ms: u64) -> Self {
-        let timestamp = UTCTimestamp::from_millis(ms);
+    fn from_millis(millis: u64) -> Self {
+        let timestamp = UTCTimestamp::from_millis(millis);
         Self::from_timestamp(timestamp)
     }
 
@@ -260,8 +262,8 @@ where
 
     /// Create from microseconds measured from the Unix Epoch.
     #[inline]
-    fn from_micros(us: u64) -> Self {
-        let timestamp = UTCTimestamp::from_micros(us);
+    fn from_micros(micros: u64) -> Self {
+        let timestamp = UTCTimestamp::from_micros(micros);
         Self::from_timestamp(timestamp)
     }
 
@@ -273,8 +275,8 @@ where
 
     /// Create from nanoseconds measured from the Unix Epoch.
     #[inline]
-    fn from_nanos(ms: u64) -> Self {
-        let timestamp = UTCTimestamp::from_nanos(ms);
+    fn from_nanos(nanos: u64) -> Self {
+        let timestamp = UTCTimestamp::from_nanos(nanos);
         Self::from_timestamp(timestamp)
     }
 
@@ -371,8 +373,8 @@ impl UTCDay {
 
 impl UTCTransformations for UTCDay {
     #[inline]
-    fn from_secs(s: u64) -> Self {
-        Self(s / SECONDS_PER_DAY)
+    fn from_secs(secs: u64) -> Self {
+        Self(secs / SECONDS_PER_DAY)
     }
 
     #[inline]
@@ -381,8 +383,8 @@ impl UTCTransformations for UTCDay {
     }
 
     #[inline]
-    fn from_millis(ms: u64) -> Self {
-        Self(ms / MILLIS_PER_DAY)
+    fn from_millis(millis: u64) -> Self {
+        Self(millis / MILLIS_PER_DAY)
     }
 
     #[inline]
@@ -391,8 +393,8 @@ impl UTCTransformations for UTCDay {
     }
 
     #[inline]
-    fn from_micros(us: u64) -> Self {
-        Self(us / MICROS_PER_DAY)
+    fn from_micros(micros: u64) -> Self {
+        Self(micros / MICROS_PER_DAY)
     }
 
     #[inline]
@@ -401,8 +403,8 @@ impl UTCTransformations for UTCDay {
     }
 
     #[inline]
-    fn from_nanos(ns: u64) -> Self {
-        Self(ns / NANOS_PER_DAY)
+    fn from_nanos(nanos: u64) -> Self {
+        Self(nanos / NANOS_PER_DAY)
     }
 
     #[inline]
@@ -505,8 +507,8 @@ impl UTCTimeOfDay {
     /// Unsafe if the user passes an invalid time-of-day nanoseconds component (exceeding NANOS_PER_DAY).
     /// Invalid inputs are not checked and may cause a panic in other methods.
     #[inline]
-    pub const unsafe fn from_nanos_unchecked(ns: u64) -> Self {
-        Self(ns)
+    pub const unsafe fn from_nanos_unchecked(nanos: u64) -> Self {
+        Self(nanos)
     }
 
     /// Unchecked method to create time of day from microseconds
@@ -515,8 +517,8 @@ impl UTCTimeOfDay {
     /// Unsafe if the user passes an invalid time-of-day microsecond component (exceeding MICROS_PER_DAY).
     /// Invalid inputs are not checked and may cause a panic in other methods.
     #[inline]
-    pub const unsafe fn from_micros_unchecked(us: u64) -> Self {
-        Self(us * NANOS_PER_MICRO)
+    pub const unsafe fn from_micros_unchecked(micros: u64) -> Self {
+        Self(micros * NANOS_PER_MICRO)
     }
 
     /// Unchecked method to create time of day from milliseconds
@@ -525,8 +527,8 @@ impl UTCTimeOfDay {
     /// Unsafe if the user passes an invalid time-of-day millisecond component (exceeding MILLIS_PER_DAY).
     /// Invalid inputs are not checked and may cause a panic in other methods.
     #[inline]
-    pub const unsafe fn from_millis_unchecked(ms: u32) -> Self {
-        Self((ms as u64) * NANOS_PER_MILLI)
+    pub const unsafe fn from_millis_unchecked(millis: u32) -> Self {
+        Self((millis as u64) * NANOS_PER_MILLI)
     }
 
     /// Unchecked method to create time of day from seconds
@@ -535,8 +537,8 @@ impl UTCTimeOfDay {
     /// Unsafe if the user passes an invalid time-of-day seconds component (exceeding SECONDS_PER_DAY).
     /// Invalid inputs are not checked and may cause a panic in other methods.
     #[inline]
-    pub const unsafe fn from_secs_unchecked(s: u32) -> Self {
-        Self((s as u64) * NANOS_PER_SECOND)
+    pub const unsafe fn from_secs_unchecked(secs: u32) -> Self {
+        Self((secs as u64) * NANOS_PER_SECOND)
     }
 
     const fn _ns_from_hhmmss(hrs: u8, mins: u8, secs: u8, subsec_ns: u32) -> u64 {
@@ -557,37 +559,37 @@ impl UTCTimeOfDay {
     }
 
     /// Try to create UTC time of day from nanoseconds
-    pub fn try_from_nanos(ns: u64) -> Result<Self> {
-        let tod = unsafe { Self::from_nanos_unchecked(ns) };
+    pub fn try_from_nanos(nanos: u64) -> Result<Self> {
+        let tod = unsafe { Self::from_nanos_unchecked(nanos) };
         if tod > Self::MAX {
-            bail!("Nanoseconds not within a day! (ns: {})", ns);
+            bail!("Nanoseconds not within a day! (nanos: {})", nanos);
         }
         Ok(tod)
     }
 
     /// Try to create UTC time of day from microseconds
-    pub fn try_from_micros(us: u64) -> Result<Self> {
-        let tod = unsafe { Self::from_micros_unchecked(us) };
+    pub fn try_from_micros(micros: u64) -> Result<Self> {
+        let tod = unsafe { Self::from_micros_unchecked(micros) };
         if tod > Self::MAX {
-            bail!("Microseconds not within a day! (us: {})", us);
+            bail!("Microseconds not within a day! (micros: {})", micros);
         }
         Ok(tod)
     }
 
     /// Try to create UTC time of day from milliseconds
-    pub fn try_from_millis(ms: u32) -> Result<Self> {
-        let tod = unsafe { Self::from_millis_unchecked(ms) };
+    pub fn try_from_millis(millis: u32) -> Result<Self> {
+        let tod = unsafe { Self::from_millis_unchecked(millis) };
         if tod > Self::MAX {
-            bail!("Milliseconds not within a day! (ms: {})", ms);
+            bail!("Milliseconds not within a day! (millis: {})", millis);
         }
         Ok(tod)
     }
 
     /// Try to create UTC time of day from seconds
-    pub fn try_from_secs(s: u32) -> Result<Self> {
-        let tod = unsafe { Self::from_secs_unchecked(s) };
+    pub fn try_from_secs(secs: u32) -> Result<Self> {
+        let tod = unsafe { Self::from_secs_unchecked(secs) };
         if tod > Self::MAX {
-            bail!("Seconds not within a day! (s: {})", s);
+            bail!("Seconds not within a day! (secs: {})", secs);
         }
         Ok(tod)
     }
