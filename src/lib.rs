@@ -28,11 +28,11 @@
 //! - Determine the civil calendar date, time of day, weekday or the number of days since the Unix Epoch.
 //! - Obtain information on a date or time, such as if it occurs within a leap year, or the number of days in the month.
 //! - Convert between time representations efficiently and ergonomically.
-//! - Compile-time const evaluation wherever possible.
-//! - Format and parse dates according to ISO 8601 `(YYYY-MM-DD)`
-//! - Format and parse datetimes according to ISO 8601 `(YYYY-MM-DDThh:mm:ssZ)`
+//! - Compile-time `const` evaluation wherever possible.
+//! - Format and parse dates, times and datetimes according to ISO 8601 `(YYYY-MM-DDThh:mm:ssZ)`
 //! - Provides constants useful for time transformations: [`utc-dt::constants`](https://docs.rs/utc-dt/latest/utc_dt/constants/index.html)
 //! - Nanosecond resolution.
+//! - Timestamps supporting standard math operators (`core::ops`)
 //! - `#![no_std]` support.
 //!
 //! ## Examples (exhaustive)
@@ -69,6 +69,12 @@
 //!     let utc_day: UTCDay = utc_timestamp.as_day();
 //!     // UTC Timestamp from UTC Day and time-of-day components
 //!     let utc_timestamp = UTCTimestamp::from_day_and_tod(utc_day, utc_tod);
+//!     // Manipulate UTC Timestamps with standard math operators
+//!     assert_eq!(utc_timestamp + utc_timestamp, utc_timestamp * 2);
+//!     assert_eq!(utc_timestamp - example_duration, UTCTimestamp::ZERO);
+//!     // Easily apply offsets of various measurements to timestamps
+//!     let utc_timestamp_plus_1s = utc_timestamp.saturating_add_millis(1000);
+//!     let utc_timestamp_minus_1s = utc_timestamp.saturating_sub_secs(1);
 //!
 //!     // UTC Day from an integer
 //!     let utc_day = UTCDay::try_from_u64(19523).unwrap();
@@ -77,6 +83,9 @@
 //!     let day_u64 = utc_day.to_u64();
 //!     // Use UTC Day to get the weekday
 //!     let weekday = utc_day.as_weekday();
+//!     // Manipulate UTC Days with standard math operators
+//!     assert_eq!(utc_day - utc_day, utc_day / u64::MAX);
+//!     assert_eq!(utc_day + 19523, utc_day * 2);
 //!
 //!     // UTC Time of Day from a time measurement (for secs, millis, micros, nanos)
 //!     let utc_tod = UTCTimeOfDay::try_from_millis(37088903).unwrap(); // OR
@@ -213,7 +222,17 @@ use time::{UTCTimeOfDay, UTCTimestamp, UTCTransformations};
 /// with nanosecond resolution.
 ///
 /// ## Examples
-/// ```rust,ignore
+#[cfg_attr(not(feature = "std"), doc = "```rust,ignore")]
+#[cfg_attr(feature = "std", doc = "```rust")]
+/// use utc_dt::time::UTCTimeOfDay;
+/// use utc_dt::date::UTCDate;
+/// use utc_dt::UTCDatetime;
+///
+/// // UTC Time of Day from a time measurement (for secs, millis, micros, nanos)
+/// let utc_tod = UTCTimeOfDay::try_from_millis(37088903).unwrap();
+/// // UTC Date directly from components
+/// let utc_date = UTCDate::try_from_components(2023, 6, 15).unwrap(); // OR
+///
 /// // UTC Datetime from date and time-of-day components
 /// let utc_datetime = UTCDatetime::from_components(utc_date, utc_tod);
 /// // Get date and time-of-day components

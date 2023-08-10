@@ -1,9 +1,10 @@
 //! Time module.
 //!
-//! Implements core time concepts via UTC Timestamps and UTC Days.
+//! Implements core time concepts via UTC Timestamps, UTC Days and UTC Time-of-Days.
 
 use core::{
     fmt::{Display, Formatter},
+    ops::*,
     time::Duration,
 };
 
@@ -19,7 +20,16 @@ use crate::constants::*;
 /// A UTC Timestamp is a Duration since the Unix Epoch.
 ///
 /// ## Examples
-/// ```rust,ignore
+#[cfg_attr(not(feature = "std"), doc = "```rust,ignore")]
+#[cfg_attr(feature = "std", doc = "```rust")]
+/// use core::time::Duration;
+///
+/// use utc_dt::time::{
+///     UTCTimestamp,
+///     UTCDay,
+///     UTCTimeOfDay,
+/// };
+///
 /// // An example duration.
 /// // When a duration is used, it is assumed to be relative to the unix epoch.
 /// // Thursday, 15 June 2023 10:18:08.903
@@ -41,6 +51,12 @@ use crate::constants::*;
 /// let utc_day: UTCDay = utc_timestamp.as_day();
 /// // UTC Timestamp from UTC Day and time-of-day components
 /// let utc_timestamp = UTCTimestamp::from_day_and_tod(utc_day, utc_tod);
+/// // Manipulate UTC Timestamps with standard math operators
+/// assert_eq!(utc_timestamp + utc_timestamp, utc_timestamp * 2);
+/// assert_eq!(utc_timestamp - example_duration, UTCTimestamp::ZERO);
+/// // Easily apply offsets of various measurements to timestamps
+/// let utc_timestamp_plus_1s = utc_timestamp.saturating_add_millis(1000);
+/// let utc_timestamp_minus_1s = utc_timestamp.saturating_sub_secs(1);
 /// ```
 ///
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
@@ -114,8 +130,8 @@ impl UTCTimestamp {
 
     /// Create UTC Timestamp from seconds since the Unix Epoch.
     #[inline]
-    pub const fn from_secs(s: u64) -> Self {
-        UTCTimestamp(Duration::from_secs(s))
+    pub const fn from_secs(secs: u64) -> Self {
+        UTCTimestamp(Duration::from_secs(secs))
     }
 
     /// Convert to seconds measured from the Unix Epoch.
@@ -126,8 +142,8 @@ impl UTCTimestamp {
 
     /// Create UTC Timestamp from milliseconds since the Unix Epoch.
     #[inline]
-    pub const fn from_millis(ms: u64) -> Self {
-        UTCTimestamp(Duration::from_millis(ms))
+    pub const fn from_millis(millis: u64) -> Self {
+        UTCTimestamp(Duration::from_millis(millis))
     }
 
     /// Convert to milliseconds measured from the Unix Epoch.
@@ -138,8 +154,8 @@ impl UTCTimestamp {
 
     /// Create UTC Timestamp from microseconds since the Unix Epoch.
     #[inline]
-    pub const fn from_micros(us: u64) -> Self {
-        UTCTimestamp(Duration::from_micros(us))
+    pub const fn from_micros(micros: u64) -> Self {
+        UTCTimestamp(Duration::from_micros(micros))
     }
 
     /// Convert to microseconds measured from the Unix Epoch.
@@ -150,14 +166,180 @@ impl UTCTimestamp {
 
     /// Create UTC Timestamp from nanoseconds since the Unix Epoch.
     #[inline]
-    pub const fn from_nanos(ns: u64) -> Self {
-        UTCTimestamp(Duration::from_nanos(ns))
+    pub const fn from_nanos(nanos: u64) -> Self {
+        UTCTimestamp(Duration::from_nanos(nanos))
     }
 
     /// Convert to seconds measured from the Unix Epoch.
     #[inline]
     pub const fn as_nanos(&self) -> u128 {
         self.0.as_nanos()
+    }
+
+    /// Checked `UTCTimestamp` addition. Computes `self + other`, returning [`None`]
+    /// if overflow occurred.
+    #[inline]
+    pub const fn checked_add(self, rhs: UTCTimestamp) -> Option<UTCTimestamp> {
+        match self.0.checked_add(rhs.0) {
+            Some(duration) => Some(UTCTimestamp(duration)),
+            None => None,
+        }
+    }
+
+    /// Checked `UTCTimestamp` addition with `Duration`. Computes `self + other`, returning [`None`]
+    /// if overflow occurred.
+    #[inline]
+    pub const fn checked_add_duration(self, rhs: Duration) -> Option<UTCTimestamp> {
+        match self.0.checked_add(rhs) {
+            Some(duration) => Some(UTCTimestamp(duration)),
+            None => None,
+        }
+    }
+
+    /// Saturating `UTCTimestamp` addition. Computes `self + other`, returning [`UTCTimestamp::MAX`]
+    /// if overflow occurred.
+    #[inline]
+    pub const fn saturating_add(self, rhs: UTCTimestamp) -> UTCTimestamp {
+        match self.checked_add(rhs) {
+            Some(res) => res,
+            None => UTCTimestamp::MAX,
+        }
+    }
+
+    /// Saturating `UTCTimestamp` addition with `Duration`. Computes `self + other`, returning [`UTCTimestamp::MAX`]
+    /// if overflow occurred.
+    #[inline]
+    pub const fn saturating_add_duration(self, rhs: Duration) -> UTCTimestamp {
+        match self.checked_add_duration(rhs) {
+            Some(res) => res,
+            None => UTCTimestamp::MAX,
+        }
+    }
+
+    /// Saturating `UTCTimestamp` addition with nanoseconds. Computes `self + other`, returning [`UTCTimestamp::MAX`]
+    /// if overflow occurred.
+    #[inline]
+    pub const fn saturating_add_nanos(self, rhs: u64) -> UTCTimestamp {
+        self.saturating_add(UTCTimestamp::from_nanos(rhs))
+    }
+
+    /// Saturating `UTCTimestamp` addition with microseconds. Computes `self + other`, returning [`UTCTimestamp::MAX`]
+    /// if overflow occurred.
+    #[inline]
+    pub const fn saturating_add_micros(self, rhs: u64) -> UTCTimestamp {
+        self.saturating_add(UTCTimestamp::from_micros(rhs))
+    }
+
+    /// Saturating `UTCTimestamp` addition with milliseconds. Computes `self + other`, returning [`UTCTimestamp::MAX`]
+    /// if overflow occurred.
+    #[inline]
+    pub const fn saturating_add_millis(self, rhs: u64) -> UTCTimestamp {
+        self.saturating_add(UTCTimestamp::from_millis(rhs))
+    }
+
+    /// Saturating `UTCTimestamp` addition with seconds. Computes `self + other`, returning [`UTCTimestamp::MAX`]
+    /// if overflow occurred.
+    #[inline]
+    pub const fn saturating_add_secs(self, rhs: u64) -> UTCTimestamp {
+        self.saturating_add(UTCTimestamp::from_secs(rhs))
+    }
+
+    /// Checked `UTCTimestamp` subtraction. Computes `self - other`, returning [`None`]
+    /// if the result would be negative or if overflow occurred.
+    #[inline]
+    pub const fn checked_sub(self, rhs: UTCTimestamp) -> Option<UTCTimestamp> {
+        match self.0.checked_sub(rhs.0) {
+            Some(duration) => Some(UTCTimestamp(duration)),
+            None => None,
+        }
+    }
+
+    /// Checked `UTCTimestamp` subtraction with `Duration`. Computes `self - other`, returning [`None`]
+    /// if the result would be negative or if overflow occurred.
+    #[inline]
+    pub const fn checked_sub_duration(self, rhs: Duration) -> Option<UTCTimestamp> {
+        match self.0.checked_sub(rhs) {
+            Some(duration) => Some(UTCTimestamp(duration)),
+            None => None,
+        }
+    }
+
+    /// Saturating `UTCTimestamp` subtraction. Computes `self - other`, returning [`UTCTimestamp::ZERO`]
+    /// if the result would be negative or if overflow occurred.
+    #[inline]
+    pub const fn saturating_sub(self, rhs: UTCTimestamp) -> UTCTimestamp {
+        match self.checked_sub(rhs) {
+            Some(res) => res,
+            None => UTCTimestamp::ZERO,
+        }
+    }
+
+    /// Saturating `UTCTimestamp` subtraction with `Duration`. Computes `self - other`, returning [`UTCTimestamp::ZERO`]
+    /// if the result would be negative or if overflow occurred.
+    #[inline]
+    pub const fn saturating_sub_duration(self, rhs: Duration) -> UTCTimestamp {
+        match self.checked_sub_duration(rhs) {
+            Some(res) => res,
+            None => UTCTimestamp::ZERO,
+        }
+    }
+
+    /// Saturating `UTCTimestamp` subtraction with nanoseconds. Computes `self + other`, returning [`UTCTimestamp::ZERO`]
+    /// if the result would be negative or if overflow occurred.
+    #[inline]
+    pub const fn saturating_sub_nanos(self, rhs: u64) -> UTCTimestamp {
+        self.saturating_sub(UTCTimestamp::from_nanos(rhs))
+    }
+
+    /// Saturating `UTCTimestamp` subtraction with microseconds. Computes `self + other`, returning [`UTCTimestamp::ZERO`]
+    /// if the result would be negative or if overflow occurred.
+    #[inline]
+    pub const fn saturating_sub_micros(self, rhs: u64) -> UTCTimestamp {
+        self.saturating_sub(UTCTimestamp::from_micros(rhs))
+    }
+
+    /// Saturating `UTCTimestamp` subtraction with milliseconds. Computes `self + other`, returning [`UTCTimestamp::ZERO`]
+    /// if the result would be negative or if overflow occurred.
+    #[inline]
+    pub const fn saturating_sub_millis(self, rhs: u64) -> UTCTimestamp {
+        self.saturating_sub(UTCTimestamp::from_millis(rhs))
+    }
+
+    /// Saturating `UTCTimestamp` subtraction with seconds. Computes `self + other`, returning [`UTCTimestamp::ZERO`]
+    /// if the result would be negative or if overflow occurred.
+    #[inline]
+    pub const fn saturating_sub_secs(self, rhs: u64) -> UTCTimestamp {
+        self.saturating_sub(UTCTimestamp::from_secs(rhs))
+    }
+
+    /// Checked `UTCTimestamp` multiplication. Computes `self * other`, returning
+    /// [`None`] if overflow occurred.
+    #[inline]
+    pub const fn checked_mul(self, rhs: u32) -> Option<UTCTimestamp> {
+        match self.0.checked_mul(rhs) {
+            Some(duration) => Some(UTCTimestamp(duration)),
+            None => None,
+        }
+    }
+
+    /// Saturating `UTCTimestamp` multiplication. Computes `self * other`, returning
+    /// [`UTCTimestamp::MAX`] if overflow occurred.
+    #[inline]
+    pub const fn saturating_mul(self, rhs: u32) -> UTCTimestamp {
+        match self.checked_mul(rhs) {
+            Some(res) => res,
+            None => UTCTimestamp::MAX,
+        }
+    }
+
+    /// Checked `UTCTimestamp` division. Computes `self / other`, returning [`None`]
+    /// if `other` == 0.
+    #[inline]
+    pub const fn checked_div(self, rhs: u32) -> Option<UTCTimestamp> {
+        match self.0.checked_div(rhs) {
+            Some(duration) => Some(UTCTimestamp(duration)),
+            None => None,
+        }
     }
 }
 
@@ -174,10 +356,127 @@ impl From<UTCDay> for UTCTimestamp {
     }
 }
 
+impl Add for UTCTimestamp {
+    type Output = UTCTimestamp;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        self.checked_add(rhs)
+            .expect("overflow when adding timestamps")
+    }
+}
+
+impl Add<Duration> for UTCTimestamp {
+    type Output = UTCTimestamp;
+
+    fn add(self, rhs: Duration) -> Self::Output {
+        self.checked_add_duration(rhs)
+            .expect("overflow when adding timestamps")
+    }
+}
+
+impl AddAssign for UTCTimestamp {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs
+    }
+}
+
+impl AddAssign<Duration> for UTCTimestamp {
+    fn add_assign(&mut self, rhs: Duration) {
+        *self = *self + rhs
+    }
+}
+
+impl Sub for UTCTimestamp {
+    type Output = UTCTimestamp;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        self.checked_sub(rhs)
+            .expect("overflow when subtracting timestamps")
+    }
+}
+
+impl Sub<Duration> for UTCTimestamp {
+    type Output = UTCTimestamp;
+
+    fn sub(self, rhs: Duration) -> Self::Output {
+        self.checked_sub_duration(rhs)
+            .expect("overflow when subtracting timestamps")
+    }
+}
+
+impl SubAssign for UTCTimestamp {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
+    }
+}
+
+impl SubAssign<Duration> for UTCTimestamp {
+    fn sub_assign(&mut self, rhs: Duration) {
+        *self = *self - rhs;
+    }
+}
+
+impl Mul<u32> for UTCTimestamp {
+    type Output = UTCTimestamp;
+
+    fn mul(self, rhs: u32) -> Self::Output {
+        self.checked_mul(rhs)
+            .expect("overflow when multiplying timestamp by scalar")
+    }
+}
+
+impl Mul<UTCTimestamp> for u32 {
+    type Output = UTCTimestamp;
+
+    fn mul(self, rhs: UTCTimestamp) -> Self::Output {
+        rhs * self
+    }
+}
+
+impl MulAssign<u32> for UTCTimestamp {
+    fn mul_assign(&mut self, rhs: u32) {
+        *self = *self * rhs
+    }
+}
+
+impl Div<u32> for UTCTimestamp {
+    type Output = UTCTimestamp;
+
+    fn div(self, rhs: u32) -> Self::Output {
+        self.checked_div(rhs)
+            .expect("divide by zero error when dividing timestamp by scalar")
+    }
+}
+
+impl DivAssign<u32> for UTCTimestamp {
+    fn div_assign(&mut self, rhs: u32) {
+        *self = *self / rhs
+    }
+}
+
 /// Common methods for creating and converting between UTC structures.
 ///
 /// ## Examples
-/// ```rust,ignore
+#[cfg_attr(not(feature = "std"), doc = "```rust,ignore")]
+#[cfg_attr(feature = "std", doc = "```rust")]
+/// use core::time::Duration;
+///
+/// use utc_dt::UTCDatetime;
+/// use utc_dt::time::{
+///     UTCTimestamp,
+///     UTCDay,
+///     UTCTimeOfDay,
+///     UTCTransformations,
+/// };
+/// use utc_dt::date::UTCDate;
+///
+/// // An example duration.
+/// // When a duration is used, it is assumed to be relative to the unix epoch.
+/// // Thursday, 15 June 2023 10:18:08.903
+/// let example_duration = Duration::from_millis(1686824288903);
+/// // UTC Timestamp from a duration
+/// let utc_timestamp = UTCTimestamp::from(example_duration);
+///
 /// // Example shortcuts using `UTCTransformations`
 /// // UTC Day / UTC Date / UTC Datetime from a duration
 /// let utc_day = UTCDay::from_duration(example_duration); // OR
@@ -234,8 +533,8 @@ where
 
     /// Create from seconds measured from the Unix Epoch.
     #[inline]
-    fn from_secs(s: u64) -> Self {
-        let timestamp = UTCTimestamp::from_secs(s);
+    fn from_secs(secs: u64) -> Self {
+        let timestamp = UTCTimestamp::from_secs(secs);
         Self::from_timestamp(timestamp)
     }
 
@@ -247,8 +546,8 @@ where
 
     /// Create from milliseconds measured from the Unix Epoch.
     #[inline]
-    fn from_millis(ms: u64) -> Self {
-        let timestamp = UTCTimestamp::from_millis(ms);
+    fn from_millis(millis: u64) -> Self {
+        let timestamp = UTCTimestamp::from_millis(millis);
         Self::from_timestamp(timestamp)
     }
 
@@ -260,8 +559,8 @@ where
 
     /// Create from microseconds measured from the Unix Epoch.
     #[inline]
-    fn from_micros(us: u64) -> Self {
-        let timestamp = UTCTimestamp::from_micros(us);
+    fn from_micros(micros: u64) -> Self {
+        let timestamp = UTCTimestamp::from_micros(micros);
         Self::from_timestamp(timestamp)
     }
 
@@ -273,8 +572,8 @@ where
 
     /// Create from nanoseconds measured from the Unix Epoch.
     #[inline]
-    fn from_nanos(ms: u64) -> Self {
-        let timestamp = UTCTimestamp::from_nanos(ms);
+    fn from_nanos(nanos: u64) -> Self {
+        let timestamp = UTCTimestamp::from_nanos(nanos);
         Self::from_timestamp(timestamp)
     }
 
@@ -302,7 +601,10 @@ where
 /// UTC Day is equal to the number of days since the Unix Epoch.
 ///
 /// ## Examples
-/// ```rust,ignore
+#[cfg_attr(not(feature = "std"), doc = "```rust,ignore")]
+#[cfg_attr(feature = "std", doc = "```rust")]
+/// use utc_dt::time::UTCDay;
+///
 /// // UTC Day from an integer
 /// let utc_day = UTCDay::try_from_u64(19523).unwrap();
 /// // Integer from UTC Day
@@ -310,6 +612,9 @@ where
 /// let day_u64 = utc_day.to_u64();
 /// // Use UTC Day to get the weekday
 /// let weekday = utc_day.as_weekday();
+/// // Manipulate UTC Days with standard math operators
+/// assert_eq!(utc_day - utc_day, utc_day / u64::MAX);
+/// assert_eq!(utc_day + 19523, utc_day * 2);
 /// ```
 ///
 /// ## Safety
@@ -367,12 +672,115 @@ impl UTCDay {
     pub fn as_weekday(&self) -> u8 {
         ((self.0 + 4) % 7) as u8
     }
+
+    /// Checked `UTCDay` addition. Computes `self + other`, returning [`None`]
+    /// if overflow occurred.
+    #[inline]
+    pub fn checked_add(self, rhs: UTCDay) -> Option<UTCDay> {
+        self.0
+            .checked_add(rhs.0)
+            .map(|u| UTCDay(u).min(UTCDay::MAX))
+    }
+
+    /// Checked `UTCDay` addition with `u64`. Computes `self + other`, returning [`None`]
+    /// if overflow occurred.
+    #[inline]
+    pub fn checked_add_u64(self, rhs: u64) -> Option<UTCDay> {
+        self.0.checked_add(rhs).map(|u| UTCDay(u).min(UTCDay::MAX))
+    }
+
+    /// Saturating `UTCDay` addition. Computes `self + other`, returning [`UTCDay::MAX`]
+    /// if overflow occurred.
+    #[inline]
+    pub fn saturating_add(self, rhs: UTCDay) -> UTCDay {
+        match self.checked_add(rhs) {
+            Some(res) => res,
+            None => UTCDay::MAX,
+        }
+    }
+
+    /// Saturating `UTCDay` addition with `u64`. Computes `self + other`, returning [`UTCDay::MAX`]
+    /// if overflow occurred.
+    #[inline]
+    pub fn saturating_add_u64(self, rhs: u64) -> UTCDay {
+        match self.checked_add_u64(rhs) {
+            Some(res) => res,
+            None => UTCDay::MAX,
+        }
+    }
+
+    /// Checked `UTCDay` subtraction. Computes `self - other`, returning [`None`]
+    /// if the result would be negative or if overflow occurred.
+    #[inline]
+    pub const fn checked_sub(self, rhs: UTCDay) -> Option<UTCDay> {
+        match self.0.checked_sub(rhs.0) {
+            Some(u) => Some(UTCDay(u)),
+            None => None,
+        }
+    }
+
+    /// Checked `UTCDay` subtraction with `u64`. Computes `self - other`, returning [`None`]
+    /// if the result would be negative or if overflow occurred.
+    #[inline]
+    pub const fn checked_sub_u64(self, rhs: u64) -> Option<UTCDay> {
+        match self.0.checked_sub(rhs) {
+            Some(u) => Some(UTCDay(u)),
+            None => None,
+        }
+    }
+
+    /// Saturating `UTCDay` subtraction. Computes `self - other`, returning [`UTCDay::ZERO`]
+    /// if the result would be negative or if overflow occurred.
+    #[inline]
+    pub const fn saturating_sub(self, rhs: UTCDay) -> UTCDay {
+        match self.checked_sub(rhs) {
+            Some(res) => res,
+            None => UTCDay::ZERO,
+        }
+    }
+
+    /// Saturating `UTCDay` subtraction with `u64`. Computes `self - other`, returning [`UTCDay::ZERO`]
+    /// if the result would be negative or if overflow occurred.
+    #[inline]
+    pub const fn saturating_sub_u64(self, rhs: u64) -> UTCDay {
+        match self.checked_sub_u64(rhs) {
+            Some(res) => res,
+            None => UTCDay::ZERO,
+        }
+    }
+
+    /// Checked `UTCDay` multiplication. Computes `self * other`, returning
+    /// [`None`] if overflow occurred.
+    #[inline]
+    pub fn checked_mul(self, rhs: u64) -> Option<UTCDay> {
+        self.0.checked_mul(rhs).map(|u| UTCDay(u).min(UTCDay::MAX))
+    }
+
+    /// Saturating `UTCDay` multiplication. Computes `self * other`, returning
+    /// [`UTCDay::MAX`] if overflow occurred.
+    #[inline]
+    pub fn saturating_mul(self, rhs: u64) -> UTCDay {
+        match self.checked_mul(rhs) {
+            Some(res) => res,
+            None => UTCDay::MAX,
+        }
+    }
+
+    /// Checked `UTCDay` division. Computes `self / other`, returning [`None`]
+    /// if `other` == 0.
+    #[inline]
+    pub const fn checked_div(self, rhs: u64) -> Option<UTCDay> {
+        match self.0.checked_div(rhs) {
+            Some(u) => Some(UTCDay(u)),
+            None => None,
+        }
+    }
 }
 
 impl UTCTransformations for UTCDay {
     #[inline]
-    fn from_secs(s: u64) -> Self {
-        Self(s / SECONDS_PER_DAY)
+    fn from_secs(secs: u64) -> Self {
+        Self(secs / SECONDS_PER_DAY)
     }
 
     #[inline]
@@ -381,8 +789,8 @@ impl UTCTransformations for UTCDay {
     }
 
     #[inline]
-    fn from_millis(ms: u64) -> Self {
-        Self(ms / MILLIS_PER_DAY)
+    fn from_millis(millis: u64) -> Self {
+        Self(millis / MILLIS_PER_DAY)
     }
 
     #[inline]
@@ -391,8 +799,8 @@ impl UTCTransformations for UTCDay {
     }
 
     #[inline]
-    fn from_micros(us: u64) -> Self {
-        Self(us / MICROS_PER_DAY)
+    fn from_micros(micros: u64) -> Self {
+        Self(micros / MICROS_PER_DAY)
     }
 
     #[inline]
@@ -401,8 +809,8 @@ impl UTCTransformations for UTCDay {
     }
 
     #[inline]
-    fn from_nanos(ns: u64) -> Self {
-        Self(ns / NANOS_PER_DAY)
+    fn from_nanos(nanos: u64) -> Self {
+        Self(nanos / NANOS_PER_DAY)
     }
 
     #[inline]
@@ -418,6 +826,103 @@ impl UTCTransformations for UTCDay {
     #[inline]
     fn as_timestamp(&self) -> UTCTimestamp {
         UTCTimestamp::from_day(*self)
+    }
+}
+
+impl Add for UTCDay {
+    type Output = UTCDay;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        self.checked_add(rhs).expect("overflow when adding days")
+    }
+}
+
+impl Add<u64> for UTCDay {
+    type Output = UTCDay;
+
+    fn add(self, rhs: u64) -> Self::Output {
+        self.checked_add_u64(rhs)
+            .expect("overflow when adding days")
+    }
+}
+
+impl AddAssign for UTCDay {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs
+    }
+}
+
+impl AddAssign<u64> for UTCDay {
+    fn add_assign(&mut self, rhs: u64) {
+        *self = *self + rhs
+    }
+}
+
+impl Sub for UTCDay {
+    type Output = UTCDay;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        self.checked_sub(rhs)
+            .expect("overflow when subtracting days")
+    }
+}
+
+impl Sub<u64> for UTCDay {
+    type Output = UTCDay;
+
+    fn sub(self, rhs: u64) -> Self::Output {
+        self.checked_sub_u64(rhs)
+            .expect("overflow when subtracting days")
+    }
+}
+
+impl SubAssign for UTCDay {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
+    }
+}
+
+impl SubAssign<u64> for UTCDay {
+    fn sub_assign(&mut self, rhs: u64) {
+        *self = *self - rhs;
+    }
+}
+
+impl Mul<u64> for UTCDay {
+    type Output = UTCDay;
+
+    fn mul(self, rhs: u64) -> Self::Output {
+        self.checked_mul(rhs)
+            .expect("overflow when multiplying day by scalar")
+    }
+}
+
+impl Mul<UTCDay> for u64 {
+    type Output = UTCDay;
+
+    fn mul(self, rhs: UTCDay) -> Self::Output {
+        rhs * self
+    }
+}
+
+impl MulAssign<u64> for UTCDay {
+    fn mul_assign(&mut self, rhs: u64) {
+        *self = *self * rhs
+    }
+}
+
+impl Div<u64> for UTCDay {
+    type Output = UTCDay;
+
+    fn div(self, rhs: u64) -> Self::Output {
+        self.checked_div(rhs)
+            .expect("divide by zero error when dividing day by scalar")
+    }
+}
+
+impl DivAssign<u64> for UTCDay {
+    fn div_assign(&mut self, rhs: u64) {
+        *self = *self / rhs
     }
 }
 
@@ -448,7 +953,10 @@ impl From<UTCTimestamp> for UTCDay {
 /// A time of day measurement with nanosecond resolution.
 ///
 /// ## Examples
-/// ```rust,ignore
+#[cfg_attr(not(feature = "std"), doc = "```rust,ignore")]
+#[cfg_attr(feature = "std", doc = "```rust")]
+/// use utc_dt::time::UTCTimeOfDay;
+///
 /// // UTC Time of Day from a time measurement (for secs, millis, micros, nanos)
 /// let utc_tod = UTCTimeOfDay::try_from_millis(37088903).unwrap(); // OR
 /// let utc_tod = unsafe { UTCTimeOfDay::from_millis_unchecked(37088903) };
@@ -505,8 +1013,8 @@ impl UTCTimeOfDay {
     /// Unsafe if the user passes an invalid time-of-day nanoseconds component (exceeding NANOS_PER_DAY).
     /// Invalid inputs are not checked and may cause a panic in other methods.
     #[inline]
-    pub const unsafe fn from_nanos_unchecked(ns: u64) -> Self {
-        Self(ns)
+    pub const unsafe fn from_nanos_unchecked(nanos: u64) -> Self {
+        Self(nanos)
     }
 
     /// Unchecked method to create time of day from microseconds
@@ -515,8 +1023,8 @@ impl UTCTimeOfDay {
     /// Unsafe if the user passes an invalid time-of-day microsecond component (exceeding MICROS_PER_DAY).
     /// Invalid inputs are not checked and may cause a panic in other methods.
     #[inline]
-    pub const unsafe fn from_micros_unchecked(us: u64) -> Self {
-        Self(us * NANOS_PER_MICRO)
+    pub const unsafe fn from_micros_unchecked(micros: u64) -> Self {
+        Self(micros * NANOS_PER_MICRO)
     }
 
     /// Unchecked method to create time of day from milliseconds
@@ -525,8 +1033,8 @@ impl UTCTimeOfDay {
     /// Unsafe if the user passes an invalid time-of-day millisecond component (exceeding MILLIS_PER_DAY).
     /// Invalid inputs are not checked and may cause a panic in other methods.
     #[inline]
-    pub const unsafe fn from_millis_unchecked(ms: u32) -> Self {
-        Self((ms as u64) * NANOS_PER_MILLI)
+    pub const unsafe fn from_millis_unchecked(millis: u32) -> Self {
+        Self((millis as u64) * NANOS_PER_MILLI)
     }
 
     /// Unchecked method to create time of day from seconds
@@ -535,8 +1043,8 @@ impl UTCTimeOfDay {
     /// Unsafe if the user passes an invalid time-of-day seconds component (exceeding SECONDS_PER_DAY).
     /// Invalid inputs are not checked and may cause a panic in other methods.
     #[inline]
-    pub const unsafe fn from_secs_unchecked(s: u32) -> Self {
-        Self((s as u64) * NANOS_PER_SECOND)
+    pub const unsafe fn from_secs_unchecked(secs: u32) -> Self {
+        Self((secs as u64) * NANOS_PER_SECOND)
     }
 
     const fn _ns_from_hhmmss(hrs: u8, mins: u8, secs: u8, subsec_ns: u32) -> u64 {
@@ -557,37 +1065,37 @@ impl UTCTimeOfDay {
     }
 
     /// Try to create UTC time of day from nanoseconds
-    pub fn try_from_nanos(ns: u64) -> Result<Self> {
-        let tod = unsafe { Self::from_nanos_unchecked(ns) };
+    pub fn try_from_nanos(nanos: u64) -> Result<Self> {
+        let tod = unsafe { Self::from_nanos_unchecked(nanos) };
         if tod > Self::MAX {
-            bail!("Nanoseconds not within a day! (ns: {})", ns);
+            bail!("Nanoseconds not within a day! (nanos: {})", nanos);
         }
         Ok(tod)
     }
 
     /// Try to create UTC time of day from microseconds
-    pub fn try_from_micros(us: u64) -> Result<Self> {
-        let tod = unsafe { Self::from_micros_unchecked(us) };
+    pub fn try_from_micros(micros: u64) -> Result<Self> {
+        let tod = unsafe { Self::from_micros_unchecked(micros) };
         if tod > Self::MAX {
-            bail!("Microseconds not within a day! (us: {})", us);
+            bail!("Microseconds not within a day! (micros: {})", micros);
         }
         Ok(tod)
     }
 
     /// Try to create UTC time of day from milliseconds
-    pub fn try_from_millis(ms: u32) -> Result<Self> {
-        let tod = unsafe { Self::from_millis_unchecked(ms) };
+    pub fn try_from_millis(millis: u32) -> Result<Self> {
+        let tod = unsafe { Self::from_millis_unchecked(millis) };
         if tod > Self::MAX {
-            bail!("Milliseconds not within a day! (ms: {})", ms);
+            bail!("Milliseconds not within a day! (millis: {})", millis);
         }
         Ok(tod)
     }
 
     /// Try to create UTC time of day from seconds
-    pub fn try_from_secs(s: u32) -> Result<Self> {
-        let tod = unsafe { Self::from_secs_unchecked(s) };
+    pub fn try_from_secs(secs: u32) -> Result<Self> {
+        let tod = unsafe { Self::from_secs_unchecked(secs) };
         if tod > Self::MAX {
-            bail!("Seconds not within a day! (s: {})", s);
+            bail!("Seconds not within a day! (secs: {})", secs);
         }
         Ok(tod)
     }
