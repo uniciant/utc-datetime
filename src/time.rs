@@ -4,8 +4,8 @@
 
 use core::{
     fmt::{Display, Formatter},
-    time::Duration,
     ops::*,
+    time::Duration,
 };
 
 #[cfg(feature = "std")]
@@ -53,6 +53,7 @@ use crate::constants::*;
 /// let utc_timestamp = UTCTimestamp::from_day_and_tod(utc_day, utc_tod);
 /// // Manipulate UTC Timestamps with standard math operators
 /// assert_eq!(utc_timestamp + utc_timestamp, utc_timestamp * 2);
+/// assert_eq!(utc_timestamp - example_duration, UTCTimestamp::ZERO);
 /// // Easily apply offsets of various measurements to timestamps
 /// let utc_timestamp_plus_1s = utc_timestamp.saturating_add_millis(1000);
 /// let utc_timestamp_minus_1s = utc_timestamp.saturating_sub_secs(1);
@@ -185,11 +186,31 @@ impl UTCTimestamp {
         }
     }
 
+    /// Checked `UTCTimestamp` addition with `Duration`. Computes `self + other`, returning [`None`]
+    /// if overflow occurred.
+    #[inline]
+    pub const fn checked_add_duration(self, rhs: Duration) -> Option<UTCTimestamp> {
+        match self.0.checked_add(rhs) {
+            Some(duration) => Some(UTCTimestamp(duration)),
+            None => None,
+        }
+    }
+
     /// Saturating `UTCTimestamp` addition. Computes `self + other`, returning [`UTCTimestamp::MAX`]
     /// if overflow occurred.
     #[inline]
     pub const fn saturating_add(self, rhs: UTCTimestamp) -> UTCTimestamp {
         match self.checked_add(rhs) {
+            Some(res) => res,
+            None => UTCTimestamp::MAX,
+        }
+    }
+
+    /// Saturating `UTCTimestamp` addition with `Duration`. Computes `self + other`, returning [`UTCTimestamp::MAX`]
+    /// if overflow occurred.
+    #[inline]
+    pub const fn saturating_add_duration(self, rhs: Duration) -> UTCTimestamp {
+        match self.checked_add_duration(rhs) {
             Some(res) => res,
             None => UTCTimestamp::MAX,
         }
@@ -233,11 +254,31 @@ impl UTCTimestamp {
         }
     }
 
+    /// Checked `UTCTimestamp` subtraction with `Duration`. Computes `self - other`, returning [`None`]
+    /// if the result would be negative or if overflow occurred.
+    #[inline]
+    pub const fn checked_sub_duration(self, rhs: Duration) -> Option<UTCTimestamp> {
+        match self.0.checked_sub(rhs) {
+            Some(duration) => Some(UTCTimestamp(duration)),
+            None => None,
+        }
+    }
+
     /// Saturating `UTCTimestamp` subtraction. Computes `self - other`, returning [`UTCTimestamp::ZERO`]
     /// if the result would be negative or if overflow occurred.
     #[inline]
     pub const fn saturating_sub(self, rhs: UTCTimestamp) -> UTCTimestamp {
         match self.checked_sub(rhs) {
+            Some(res) => res,
+            None => UTCTimestamp::ZERO,
+        }
+    }
+
+    /// Saturating `UTCTimestamp` subtraction with `Duration`. Computes `self - other`, returning [`UTCTimestamp::ZERO`]
+    /// if the result would be negative or if overflow occurred.
+    #[inline]
+    pub const fn saturating_sub_duration(self, rhs: Duration) -> UTCTimestamp {
+        match self.checked_sub_duration(rhs) {
             Some(res) => res,
             None => UTCTimestamp::ZERO,
         }
@@ -319,7 +360,17 @@ impl Add for UTCTimestamp {
     type Output = UTCTimestamp;
 
     fn add(self, rhs: Self) -> Self::Output {
-        self.checked_add(rhs).expect("overflow when adding timestamps")
+        self.checked_add(rhs)
+            .expect("overflow when adding timestamps")
+    }
+}
+
+impl Add<Duration> for UTCTimestamp {
+    type Output = UTCTimestamp;
+
+    fn add(self, rhs: Duration) -> Self::Output {
+        self.checked_add_duration(rhs)
+            .expect("overflow when adding timestamps")
     }
 }
 
@@ -329,11 +380,27 @@ impl AddAssign for UTCTimestamp {
     }
 }
 
+impl AddAssign<Duration> for UTCTimestamp {
+    fn add_assign(&mut self, rhs: Duration) {
+        *self = *self + rhs
+    }
+}
+
 impl Sub for UTCTimestamp {
     type Output = UTCTimestamp;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        self.checked_sub(rhs).expect("overflow when subtracting timestamps")
+        self.checked_sub(rhs)
+            .expect("overflow when subtracting timestamps")
+    }
+}
+
+impl Sub<Duration> for UTCTimestamp {
+    type Output = UTCTimestamp;
+
+    fn sub(self, rhs: Duration) -> Self::Output {
+        self.checked_sub_duration(rhs)
+            .expect("overflow when subtracting timestamps")
     }
 }
 
@@ -343,11 +410,18 @@ impl SubAssign for UTCTimestamp {
     }
 }
 
+impl SubAssign<Duration> for UTCTimestamp {
+    fn sub_assign(&mut self, rhs: Duration) {
+        *self = *self - rhs;
+    }
+}
+
 impl Mul<u32> for UTCTimestamp {
     type Output = UTCTimestamp;
 
     fn mul(self, rhs: u32) -> Self::Output {
-        self.checked_mul(rhs).expect("overflow when multiplying timestamp by scalar")
+        self.checked_mul(rhs)
+            .expect("overflow when multiplying timestamp by scalar")
     }
 }
 
@@ -369,7 +443,8 @@ impl Div<u32> for UTCTimestamp {
     type Output = UTCTimestamp;
 
     fn div(self, rhs: u32) -> Self::Output {
-        self.checked_div(rhs).expect("divide by zero error when dividing timestamp by scalar")
+        self.checked_div(rhs)
+            .expect("divide by zero error when dividing timestamp by scalar")
     }
 }
 
@@ -602,20 +677,16 @@ impl UTCDay {
     /// if overflow occurred.
     #[inline]
     pub fn checked_add(self, rhs: UTCDay) -> Option<UTCDay> {
-        match self.0.checked_add(rhs.0) {
-            Some(u) => Some(UTCDay(u).min(UTCDay::MAX)),
-            None => None,
-        }
+        self.0
+            .checked_add(rhs.0)
+            .map(|u| UTCDay(u).min(UTCDay::MAX))
     }
 
     /// Checked `UTCDay` addition with `u64`. Computes `self + other`, returning [`None`]
     /// if overflow occurred.
     #[inline]
     pub fn checked_add_u64(self, rhs: u64) -> Option<UTCDay> {
-        match self.0.checked_add(rhs) {
-            Some(u) => Some(UTCDay(u).min(UTCDay::MAX)),
-            None => None,
-        }
+        self.0.checked_add(rhs).map(|u| UTCDay(u).min(UTCDay::MAX))
     }
 
     /// Saturating `UTCDay` addition. Computes `self + other`, returning [`UTCDay::MAX`]
@@ -682,10 +753,7 @@ impl UTCDay {
     /// [`None`] if overflow occurred.
     #[inline]
     pub fn checked_mul(self, rhs: u64) -> Option<UTCDay> {
-        match self.0.checked_mul(rhs) {
-            Some(u) => Some(UTCDay(u).min(UTCDay::MAX)),
-            None => None,
-        }
+        self.0.checked_mul(rhs).map(|u| UTCDay(u).min(UTCDay::MAX))
     }
 
     /// Saturating `UTCDay` multiplication. Computes `self * other`, returning
@@ -707,8 +775,6 @@ impl UTCDay {
             None => None,
         }
     }
-
-
 }
 
 impl UTCTransformations for UTCDay {
@@ -775,7 +841,8 @@ impl Add<u64> for UTCDay {
     type Output = UTCDay;
 
     fn add(self, rhs: u64) -> Self::Output {
-        self.checked_add_u64(rhs).expect("overflow when adding days")
+        self.checked_add_u64(rhs)
+            .expect("overflow when adding days")
     }
 }
 
@@ -795,7 +862,8 @@ impl Sub for UTCDay {
     type Output = UTCDay;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        self.checked_sub(rhs).expect("overflow when subtracting days")
+        self.checked_sub(rhs)
+            .expect("overflow when subtracting days")
     }
 }
 
@@ -803,7 +871,8 @@ impl Sub<u64> for UTCDay {
     type Output = UTCDay;
 
     fn sub(self, rhs: u64) -> Self::Output {
-        self.checked_sub_u64(rhs).expect("overflow when subtracting days")
+        self.checked_sub_u64(rhs)
+            .expect("overflow when subtracting days")
     }
 }
 
@@ -823,7 +892,8 @@ impl Mul<u64> for UTCDay {
     type Output = UTCDay;
 
     fn mul(self, rhs: u64) -> Self::Output {
-        self.checked_mul(rhs).expect("overflow when multiplying day by scalar")
+        self.checked_mul(rhs)
+            .expect("overflow when multiplying day by scalar")
     }
 }
 
@@ -845,7 +915,8 @@ impl Div<u64> for UTCDay {
     type Output = UTCDay;
 
     fn div(self, rhs: u64) -> Self::Output {
-        self.checked_div(rhs).expect("divide by zero error when dividing day by scalar")
+        self.checked_div(rhs)
+            .expect("divide by zero error when dividing day by scalar")
     }
 }
 
