@@ -111,35 +111,84 @@ fn test_utc_timestamp() -> Result<()> {
     assert_eq!(UTCTimestamp::MAX, timestamp_copy.max(UTCTimestamp::MAX));
     // test operation methods
     assert_eq!(timestamp.saturating_add(UTCTimestamp::ZERO), timestamp);
-    assert_eq!(timestamp.saturating_add(UTCTimestamp::MAX), UTCTimestamp::MAX);
+    assert_eq!(
+        timestamp.saturating_add(UTCTimestamp::MAX),
+        UTCTimestamp::MAX
+    );
+    assert_eq!(timestamp.saturating_add_duration(Duration::ZERO), timestamp);
+    assert_eq!(
+        timestamp.saturating_add_duration(Duration::MAX),
+        UTCTimestamp::MAX
+    );
     assert_eq!(timestamp.saturating_add_secs(0), timestamp);
     assert_eq!(timestamp.saturating_add_secs(u64::MAX), UTCTimestamp::MAX);
-    assert_eq!(timestamp.saturating_add_millis(1000), timestamp.saturating_add_secs(1));
-    assert_eq!(timestamp.saturating_add_micros(1000), timestamp.saturating_add_millis(1));
-    assert_eq!(timestamp.saturating_add_nanos(1000), timestamp.saturating_add_micros(1));
+    assert_eq!(
+        timestamp.saturating_add_millis(1000),
+        timestamp.saturating_add_secs(1)
+    );
+    assert_eq!(
+        timestamp.saturating_add_micros(1000),
+        timestamp.saturating_add_millis(1)
+    );
+    assert_eq!(
+        timestamp.saturating_add_nanos(1000),
+        timestamp.saturating_add_micros(1)
+    );
     assert_eq!(timestamp.saturating_sub(UTCTimestamp::ZERO), timestamp);
-    assert_eq!(timestamp.saturating_sub(UTCTimestamp::MAX), UTCTimestamp::ZERO);
+    assert_eq!(
+        timestamp.saturating_sub(UTCTimestamp::MAX),
+        UTCTimestamp::ZERO
+    );
+    assert_eq!(timestamp.saturating_sub_duration(Duration::ZERO), timestamp);
+    assert_eq!(
+        timestamp.saturating_sub_duration(Duration::MAX),
+        UTCTimestamp::ZERO
+    );
     assert_eq!(timestamp.saturating_sub_secs(0), timestamp);
     assert_eq!(timestamp.saturating_sub_secs(u64::MAX), UTCTimestamp::ZERO);
-    assert_eq!(timestamp.saturating_sub_millis(1000), timestamp.saturating_sub_secs(1));
-    assert_eq!(timestamp.saturating_sub_micros(1000), timestamp.saturating_sub_millis(1));
-    assert_eq!(timestamp.saturating_sub_nanos(1000), timestamp.saturating_sub_micros(1));
+    assert_eq!(
+        timestamp.saturating_sub_millis(1000),
+        timestamp.saturating_sub_secs(1)
+    );
+    assert_eq!(
+        timestamp.saturating_sub_micros(1000),
+        timestamp.saturating_sub_millis(1)
+    );
+    assert_eq!(
+        timestamp.saturating_sub_nanos(1000),
+        timestamp.saturating_sub_micros(1)
+    );
     assert_eq!(timestamp.saturating_mul(u32::MIN), UTCTimestamp::ZERO);
-    assert_eq!(timestamp.saturating_mul(u32::MAX).saturating_mul(u32::MAX), UTCTimestamp::MAX);
-    assert_eq!(timestamp.checked_div(u32::MAX).unwrap().checked_div(u32::MAX), Some(UTCTimestamp::ZERO));
+    assert_eq!(
+        timestamp.saturating_mul(u32::MAX).saturating_mul(u32::MAX),
+        UTCTimestamp::MAX
+    );
+    assert_eq!(
+        timestamp
+            .checked_div(u32::MAX)
+            .unwrap()
+            .checked_div(u32::MAX),
+        Some(UTCTimestamp::ZERO)
+    );
     assert_eq!(timestamp.checked_div(u32::MIN), None);
     // test operation implementations
     let one = UTCTimestamp::from_nanos(1);
     let two = UTCTimestamp::from_nanos(2);
+    let three = UTCTimestamp::from_nanos(3);
+    let one_duration = Duration::from_nanos(1);
     assert_eq!(one + one, two);
+    assert_eq!(one + one_duration, two);
     assert_eq!(two - one, one);
+    assert_eq!(two - one_duration, one);
     assert_eq!(two * 1, two);
     assert_eq!(1 * two, two);
     assert_eq!(two / 2, one);
     let mut assign = UTCTimestamp::ZERO;
+    assign += one_duration;
     assign += two;
-    assert_eq!(assign, two);
+    assert_eq!(assign, three);
     assign -= one;
+    assign -= one_duration;
     assert_eq!(assign, one);
     assign *= 2;
     assert_eq!(assign, two);
@@ -201,7 +250,10 @@ fn test_utc_day() -> Result<()> {
     // test operation methods
     assert_eq!(utc_day.saturating_add(UTCDay::ZERO), utc_day);
     assert_eq!(utc_day.saturating_add(UTCDay::MAX), UTCDay::MAX);
-    assert_eq!(utc_day.saturating_add(unsafe { UTCDay::from_u64_unchecked(u64::MAX) }), UTCDay::MAX);
+    assert_eq!(
+        utc_day.saturating_add(unsafe { UTCDay::from_u64_unchecked(u64::MAX) }),
+        UTCDay::MAX
+    );
     assert_eq!(utc_day.saturating_add_u64(0), utc_day);
     assert_eq!(utc_day.saturating_add_u64(u64::MAX), UTCDay::MAX);
     assert_eq!(utc_day.saturating_sub(UTCDay::ZERO), utc_day);
