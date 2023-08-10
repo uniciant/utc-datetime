@@ -71,6 +71,7 @@
 //!     let utc_timestamp = UTCTimestamp::from_day_and_tod(utc_day, utc_tod);
 //!     // Manipulate UTC Timestamps with standard math operators
 //!     assert_eq!(utc_timestamp + utc_timestamp, utc_timestamp * 2);
+//!     assert_eq!(utc_timestamp - example_duration, UTCTimestamp::ZERO);
 //!     // Easily apply offsets of various measurements to timestamps
 //!     let utc_timestamp_plus_1s = utc_timestamp.saturating_add_millis(1000);
 //!     let utc_timestamp_minus_1s = utc_timestamp.saturating_sub_secs(1);
