@@ -18,7 +18,14 @@ use crate::time::{UTCDay, UTCTimestamp, UTCTransformations};
 /// A UTC Date is any calendar date since the Unix epoch date (inclusive).
 ///
 /// ## Examples
-/// ```rust,ignore
+#[cfg_attr(not(feature = "std"), doc = "```rust,ignore")]
+#[cfg_attr(feature = "std", doc = "```rust")]
+/// use utc_dt::time::UTCDay;
+/// use utc_dt::date::UTCDate;
+///
+/// // UTC Day from an integer
+/// let utc_day = UTCDay::try_from_u64(19523).unwrap();
+///
 /// // UTC Date directly from components
 /// let utc_date = UTCDate::try_from_components(2023, 6, 15).unwrap(); // OR
 /// let utc_date = unsafe { UTCDate::from_components_unchecked(2023, 6, 15) };
