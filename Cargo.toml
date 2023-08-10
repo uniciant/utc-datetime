@@ -1,6 +1,6 @@
 [package]
 name = "utc-dt"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Reece Kibble <reecek@uniciant.com>"]
 categories = ["date-and-time", "no-std", "parsing"]
 keywords = ["time", "datetime", "date", "utc", "epoch"]
