@@ -40,7 +40,7 @@ fn test_date_from_components() {
 }
 
 #[test]
-fn test_date_from_day() -> Result<(), UTCError>{
+fn test_date_from_day() -> Result<(), UTCError> {
     let test_cases = [
         (UTCDay::ZERO, 1970, 1, 1),
         (UTCDay::try_from_u64(30)?, 1970, 1, 31),
