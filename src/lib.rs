@@ -214,7 +214,7 @@ pub mod time;
 pub mod constants;
 
 use crate::date::{UTCDate, UTCDateError};
-use crate::time::{UTCTimeOfDay, UTCTimestamp, UTCTransformations, UTCTimeOfDayError};
+use crate::time::{UTCTimeOfDay, UTCTimeOfDayError, UTCTimestamp, UTCTransformations};
 use core::fmt::{Display, Formatter};
 use core::time::Duration;
 

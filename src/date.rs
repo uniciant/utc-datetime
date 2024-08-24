@@ -10,15 +10,12 @@ use core::num::ParseIntError;
 use core::time::Duration;
 
 #[cfg(feature = "alloc")]
-use alloc::{
-    string::String,
-    format
-};
+use alloc::{format, string::String};
 
 // TODO <https://github.com/rust-lang/rust/issues/103765>
 #[cfg(feature = "nightly")]
 use core::error::Error;
-#[cfg(all(feature ="std", not(feature = "nightly")))]
+#[cfg(all(feature = "std", not(feature = "nightly")))]
 use std::error::Error;
 
 /// UTC Date.
@@ -337,21 +334,17 @@ pub enum UTCDateError {
     /// Error raised due to out of range day
     DayOutOfRange(UTCDate),
     /// Error raised due to out of range date
-    DateOutOfRange(UTCDate)
+    DateOutOfRange(UTCDate),
 }
 
 impl Display for UTCDateError {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::ParseErr(e) => e.fmt(f),
-            Self::YearOutOfRange(y) =>
-                write!(f, "Year ({y}) out of range!"),
-            Self::MonthOutOfRange(m) =>
-                write!(f, "Month ({m}) out of range!"),
-            Self::DayOutOfRange(d) =>
-                write!(f, "Day ({d}) out of range!"),
-            Self::DateOutOfRange(date) =>
-                write!(f, "Date ({date}) out of range!"),
+            Self::YearOutOfRange(y) => write!(f, "Year ({y}) out of range!"),
+            Self::MonthOutOfRange(m) => write!(f, "Month ({m}) out of range!"),
+            Self::DayOutOfRange(d) => write!(f, "Day ({d}) out of range!"),
+            Self::DateOutOfRange(date) => write!(f, "Date ({date}) out of range!"),
         }
     }
 }
@@ -361,7 +354,7 @@ impl Error for UTCDateError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::ParseErr(e) => e.source(),
-            _ => None
+            _ => None,
         }
     }
 }

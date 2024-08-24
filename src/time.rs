@@ -9,10 +9,7 @@ use core::ops::*;
 use core::time::Duration;
 
 #[cfg(feature = "alloc")]
-use alloc::{
-    string::String,
-    format
-};
+use alloc::{format, string::String};
 
 #[cfg(feature = "std")]
 use std::time::{SystemTime, SystemTimeError};
@@ -1127,7 +1124,12 @@ impl UTCTimeOfDay {
     ///
     /// Inputs are not limited by divisions. eg. 61 minutes is valid input, 61 seconds, etc.
     /// The time described must not exceed the number of nanoseconds in a day.
-    pub fn try_from_hhmmss(hrs: u8, mins: u8, secs: u8, subsec_ns: u32) -> Result<Self, UTCTimeOfDayError> {
+    pub fn try_from_hhmmss(
+        hrs: u8,
+        mins: u8,
+        secs: u8,
+        subsec_ns: u32,
+    ) -> Result<Self, UTCTimeOfDayError> {
         Self::try_from_nanos(Self::_ns_from_hhmmss(hrs, mins, secs, subsec_ns))
     }
 
@@ -1258,16 +1260,11 @@ impl Display for UTCTimeOfDayError {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::ParseErr(e) => e.fmt(f),
-            Self::ExcessPrecision(p) =>
-                write!(f, "ISO precision ({p}) exceeds maximum of 9"),
-            Self::ExcessNanos(n) =>
-                write!(f, "Nanoseconds ({n}) not within a day"),
-            Self::ExcessMicros(u) =>
-                write!(f, "Microseconds ({u}) not within a day"),
-            Self::ExcessMillis(m) =>
-                write!(f, "Milliseconds ({m}) not within a day"),
-            Self::ExcessSeconds(s) =>
-                write!(f, "Seconds ({s}) not within a day"),
+            Self::ExcessPrecision(p) => write!(f, "ISO precision ({p}) exceeds maximum of 9"),
+            Self::ExcessNanos(n) => write!(f, "Nanoseconds ({n}) not within a day"),
+            Self::ExcessMicros(u) => write!(f, "Microseconds ({u}) not within a day"),
+            Self::ExcessMillis(m) => write!(f, "Milliseconds ({m}) not within a day"),
+            Self::ExcessSeconds(s) => write!(f, "Seconds ({s}) not within a day"),
         }
     }
 }
@@ -1277,7 +1274,7 @@ impl Error for UTCTimeOfDayError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::ParseErr(e) => e.source(),
-            _ => None
+            _ => None,
         }
     }
 }
