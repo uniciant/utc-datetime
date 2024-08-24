@@ -12,7 +12,7 @@
 //!
 //! ```rust,ignore
 //! [dependencies]
-//! utc-dt = "0.2"
+//! utc-dt = "0.3"
 //! ```
 //! For extended/niche features and local time-zone support see [`chrono`](https://github.com/chronotope/chrono) or [`time`](https://github.com/time-rs/time).
 //!
@@ -33,7 +33,8 @@
 //! - Provides constants useful for time transformations: [`utc-dt::constants`](https://docs.rs/utc-dt/latest/utc_dt/constants/index.html)
 //! - Nanosecond resolution.
 //! - Timestamps supporting standard math operators (`core::ops`)
-//! - `#![no_std]` support.
+//! - `#![no_std]` and optional `alloc` support.
+//! - Optional serialization/deserialization of structures via `serde`
 //!
 //! ## Examples (exhaustive)
 #![cfg_attr(not(feature = "std"), doc = "```rust,ignore")]
@@ -100,10 +101,8 @@
 //!     // UTC Time of Day subsecond component (in nanoseconds)
 //!     let subsec_ns = utc_tod.as_subsec_ns();
 //!     // Parse a UTC Time of Day from an ISO 8601 time string `(Thh:mm:ssZ)`
-//!     // Not available for #![no_std]
 //!     let utc_tod = UTCTimeOfDay::try_from_iso_tod("T10:18:08.903Z").unwrap();
 //!     // Get a time of day string formatted according to ISO 8601 `(Thh:mm:ssZ)`
-//!     // Not available for #![no_std]
 //!     let precision = Some(6);
 //!     let iso_tod = utc_tod.as_iso_tod(precision);
 //!     assert_eq!(iso_tod, "T10:18:08.903000Z");
@@ -122,10 +121,8 @@
 //!     // UTC Day from UTC Date
 //!     let utc_day = utc_date.as_day();
 //!     // Parse a UTC Date from an ISO 8601 date string `(YYYY-MM-DD)`
-//!     // Not available for #![no_std]
 //!     let utc_date = UTCDate::try_from_iso_date("2023-06-15").unwrap();
 //!     // Get date string formatted according to ISO 8601 `(YYYY-MM-DD)`
-//!     // Not available for #![no_std]
 //!     let iso_date = utc_date.as_iso_date();
 //!     assert_eq!(iso_date, "2023-06-15");
 //!
@@ -135,10 +132,8 @@
 //!     let (utc_date, time_of_day_ns) = (utc_datetime.as_date(), utc_datetime.as_tod()); // OR
 //!     let (utc_date, time_of_day_ns) = utc_datetime.as_components();
 //!     // Parse a UTC Datetime from an ISO 8601 datetime string `(YYYY-MM-DDThh:mm:ssZ)`
-//!     // Not available for #![no_std]
 //!     let utc_datetime = UTCDatetime::try_from_iso_datetime("2023-06-15T10:18:08.903Z").unwrap();
 //!     // Get UTC datetime string formatted according to ISO 8601 `(YYYY-MM-DDThh:mm:ssZ)`
-//!     // Not available for #![no_std]
 //!     let precision = None;
 //!     let iso_datetime = utc_datetime.as_iso_datetime(precision);
 //!     assert_eq!(iso_datetime, "2023-06-15T10:18:08Z");
@@ -184,6 +179,13 @@
 //!         let utc_nanos: u128 = utc_date.as_nanos();
 //!     }
 //! ```
+//!
+//! ## Feature flags
+//! The [`std`, `alloc`] feature flags are enabled by default.
+//! - `std`: Enables methods that use the system clock via `std::time::SystemTime`. Enables `alloc`.
+//! - `alloc`: Enables methods that use allocated strings.
+//! - `serde`: Derives `serde::Serialize` and `serde::Deserialize` for all internal non-error types.
+//! - `nightly`: Enables the unstable [`error_in_core`](https://github.com/rust-lang/rust/issues/103765) feature for improved `#[no_std]` error handling.
 //!
 //! ## References
 //! - [(Howard Hinnant, 2021) `chrono`-Compatible Low-Level Date Algorithms](http://howardhinnant.github.io/date_algorithms.html)
