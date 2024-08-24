@@ -16,21 +16,14 @@ exclude = [".git*"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["std", "serde"]
+default = ["std"]
 std = [
     "alloc",
-    "anyhow/std",
     "serde/std",
 ]
-nightly = []
 alloc = ["serde/alloc"]
 serde = ["dep:serde"]
+nightly = []
 
 [dependencies]
 serde = { version = "1.0", default-features = false, optional = true, features = ["derive"] }
-# TODO not wrapping thiserror_core https://github.com/rust-lang/rust/issues/103765
-# Releasing in stable rust 1.81.0, 5th september!
-thiserror = { version = "1.0", package = "thiserror-core", default-features = false }
-
-[dev-dependencies]
-anyhow = { version = "1.0", default-features = false }
