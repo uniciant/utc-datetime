@@ -1,15 +1,14 @@
 use std::collections::HashSet;
 
-use anyhow::Result;
-
 use utc_dt::{
     constants::{MICROS_PER_DAY, MILLIS_PER_DAY, NANOS_PER_DAY, SECONDS_PER_DAY},
     date::UTCDate,
     time::{UTCDay, UTCTimestamp, UTCTransformations},
+    UTCError,
 };
 
 #[test]
-fn test_date_from_components() -> Result<()> {
+fn test_date_from_components() {
     let test_cases = [
         (2023, 6, 14, true, false, 30),               // valid recent date
         (1970, 1, 1, true, false, 31),                // valid epoch date
@@ -38,12 +37,10 @@ fn test_date_from_components() -> Result<()> {
             }
         }
     }
-
-    Ok(())
 }
 
 #[test]
-fn test_date_from_day() -> Result<()> {
+fn test_date_from_day() -> Result<(), UTCError>{
     let test_cases = [
         (UTCDay::ZERO, 1970, 1, 1),
         (UTCDay::try_from_u64(30)?, 1970, 1, 31),
@@ -67,7 +64,7 @@ fn test_date_from_day() -> Result<()> {
 
 #[test]
 #[cfg(feature = "std")]
-fn test_date_iso_conversions() -> Result<()> {
+fn test_date_iso_conversions() -> Result<(), UTCError> {
     let test_cases = [
         (2023, 6, 14, true, "2023-06-14"),   // valid recent date
         (1970, 1, 1, true, "1970-01-01"),    // valid epoch date
@@ -99,7 +96,7 @@ fn test_date_iso_conversions() -> Result<()> {
     }
 
     // test transform from system time
-    let date_from_system_time = UTCDate::try_from_system_time()?;
+    let date_from_system_time = UTCDate::try_from_system_time().unwrap();
     assert!(date_from_system_time >= UTCDate::MIN);
     assert!(date_from_system_time <= UTCDate::MAX);
     // test debug & display
@@ -118,7 +115,7 @@ fn test_date_iso_conversions() -> Result<()> {
 }
 
 #[test]
-fn test_date_transformations() -> Result<()> {
+fn test_date_transformations() -> Result<(), UTCError> {
     let test_cases = [
         (UTCTimestamp::from_secs(0), 1970, 1, 1),
         (UTCTimestamp::from_secs(2592000), 1970, 1, 31),

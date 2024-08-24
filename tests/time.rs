@@ -1,15 +1,14 @@
 use core::time::Duration;
 use std::collections::HashSet;
 
-use anyhow::Result;
-
 use utc_dt::{
     constants::{MICROS_PER_DAY, MILLIS_PER_DAY, NANOS_PER_DAY, NANOS_PER_SECOND, SECONDS_PER_DAY},
     time::{UTCDay, UTCTimeOfDay, UTCTimestamp, UTCTransformations},
+    UTCError,
 };
 
 #[test]
-fn test_utc_timestamp() -> Result<()> {
+fn test_utc_timestamp() -> Result<(), UTCError> {
     let test_cases = [
         (
             UTCTimestamp::from_nanos(0),
@@ -96,7 +95,7 @@ fn test_utc_timestamp() -> Result<()> {
 
     // test from system time
     #[cfg(feature = "std")]
-    let timestamp = UTCTimestamp::try_from_system_time()?;
+    let timestamp = UTCTimestamp::try_from_system_time().unwrap();
     #[cfg(not(feature = "std"))]
     let timestamp = UTCTimestamp::from_millis(1686824288903);
     assert!(timestamp <= UTCTimestamp::MAX);
@@ -198,10 +197,10 @@ fn test_utc_timestamp() -> Result<()> {
 }
 
 #[test]
-fn test_utc_day() -> Result<()> {
+fn test_utc_day() -> Result<(), UTCError> {
     // test from system time
     #[cfg(feature = "std")]
-    let utc_day = UTCDay::try_from_system_time()?;
+    let utc_day = UTCDay::try_from_system_time().unwrap();
     #[cfg(not(feature = "std"))]
     let utc_day = UTCDay::from_millis(1686824288903);
     assert!(utc_day <= UTCDay::MAX);
@@ -290,10 +289,10 @@ fn test_utc_day() -> Result<()> {
 }
 
 #[test]
-fn test_utc_tod() -> Result<()> {
+fn test_utc_tod() -> Result<(), UTCError> {
     // test from system time
     #[cfg(feature = "std")]
-    let timestamp = UTCTimestamp::try_from_system_time()?;
+    let timestamp = UTCTimestamp::try_from_system_time().unwrap();
     #[cfg(not(feature = "std"))]
     let timestamp = UTCTimestamp::from_millis(1686824288903);
     let tod_from_timestamp = UTCTimeOfDay::from_timestamp(timestamp);
@@ -311,7 +310,7 @@ fn test_utc_tod() -> Result<()> {
     assert!(UTCTimeOfDay::try_from_hhmmss(23, 59, 59, (NANOS_PER_SECOND - 1) as u32).is_ok());
     assert!(UTCTimeOfDay::try_from_hhmmss(u8::MAX, u8::MAX, u8::MAX, u32::MAX).is_err());
     // test iso conversions
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     {
         let iso_from_tod = tod_from_timestamp.as_iso_tod(Some(9));
         let tod_from_iso = UTCTimeOfDay::try_from_iso_tod(&iso_from_tod)?;

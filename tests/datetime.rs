@@ -1,13 +1,11 @@
-use anyhow::Result;
-
 use utc_dt::{
     date::UTCDate,
     time::{UTCDay, UTCTimeOfDay, UTCTimestamp, UTCTransformations},
-    UTCDatetime,
+    UTCDatetime, UTCError,
 };
 
 #[test]
-fn test_datetime_from_raw_components() -> Result<()> {
+fn test_datetime_from_raw_components() -> Result<(), UTCError> {
     let test_cases = [
         (1970, 1, 1, 0, 0, 0, 0, 0, UTCDay::ZERO), // thu, 00:00:00.000
         (
@@ -35,7 +33,7 @@ fn test_datetime_from_raw_components() -> Result<()> {
 
     // test display & debug
     #[cfg(feature = "std")]
-    let datetime = UTCDatetime::try_from_system_time()?;
+    let datetime = UTCDatetime::try_from_system_time().unwrap();
     #[cfg(not(feature = "std"))]
     let datetime = UTCDatetime::from_millis(1686824288903);
     // test to/as components
@@ -43,7 +41,7 @@ fn test_datetime_from_raw_components() -> Result<()> {
     assert_eq!((date, tod), datetime.to_components());
     // test from timestamp
     #[cfg(feature = "std")]
-    let timestamp = UTCTimestamp::try_from_system_time()?;
+    let timestamp = UTCTimestamp::try_from_system_time().unwrap();
     #[cfg(not(feature = "std"))]
     let timestamp = UTCTimestamp::from_millis(1686824288903);
     let datetime_from_timestamp = UTCDatetime::from_timestamp(timestamp);
@@ -95,9 +93,9 @@ fn test_datetime_from_raw_components() -> Result<()> {
     Ok(())
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 #[test]
-fn test_datetime_iso_conversions() -> Result<()> {
+fn test_datetime_iso_conversions() -> Result<(), UTCError> {
     let test_cases = [
         (1970, 1, 1, 0, None, "1970-01-01T00:00:00Z"), // thu, 00:00:00
         (1970, 1, 1, 0, Some(0), "1970-01-01T00:00:00.Z"), // thu, 00:00:00.
@@ -132,8 +130,10 @@ fn test_datetime_iso_conversions() -> Result<()> {
     assert!(UTCDatetime::try_from_iso_datetime("1970-01-01T00:a0:00Z").is_err());
 
     // test display & debug
-    let datetime = UTCDatetime::try_from_system_time()?;
-    println!("{:?}:{datetime}", datetime);
-
+    #[cfg(feature = "std")]
+    {
+        let datetime = UTCDatetime::try_from_system_time().unwrap();
+        println!("{:?}:{datetime}", datetime);
+    }
     Ok(())
 }
