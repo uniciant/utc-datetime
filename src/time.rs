@@ -2,18 +2,26 @@
 //!
 //! Implements core time concepts via UTC Timestamps, UTC Days and UTC Time-of-Days.
 
-use core::{
-    fmt::{Display, Formatter},
-    ops::*,
-    time::Duration,
+use crate::constants::*;
+use core::fmt::{Display, Formatter};
+use core::num::ParseIntError;
+use core::ops::*;
+use core::time::Duration;
+
+#[cfg(feature = "alloc")]
+use alloc::{
+    string::String,
+    format
 };
 
 #[cfg(feature = "std")]
-use std::time::SystemTime;
+use std::time::{SystemTime, SystemTimeError};
 
-use anyhow::{bail, Result};
-
-use crate::constants::*;
+// TODO <https://github.com/rust-lang/rust/issues/103765>
+#[cfg(feature = "nightly")]
+use core::error::Error;
+#[cfg(all(feature = "std", not(feature = "nightly")))]
+use std::error::Error;
 
 /// UTC Timestamp.
 ///
@@ -59,6 +67,7 @@ use crate::constants::*;
 /// let utc_timestamp_minus_1s = utc_timestamp.saturating_sub_secs(1);
 /// ```
 ///
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct UTCTimestamp(Duration);
 
@@ -90,7 +99,7 @@ impl UTCTimestamp {
 
     /// Try to create a UTC Timestamp from the local system time.
     #[cfg(feature = "std")]
-    pub fn try_from_system_time() -> Result<Self> {
+    pub fn try_from_system_time() -> Result<Self, SystemTimeError> {
         let duration = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
         Ok(UTCTimestamp(duration))
     }
@@ -585,7 +594,7 @@ where
 
     /// Create from local system time
     #[cfg(feature = "std")]
-    fn try_from_system_time() -> Result<Self> {
+    fn try_from_system_time() -> Result<Self, SystemTimeError> {
         let timestamp = UTCTimestamp::try_from_system_time()?;
         Ok(Self::from_timestamp(timestamp))
     }
@@ -644,10 +653,10 @@ impl UTCDay {
     }
 
     /// Try create UTC Day from integer.
-    pub fn try_from_u64(u: u64) -> Result<Self> {
+    pub fn try_from_u64(u: u64) -> Result<Self, UTCDayErrOutOfRange> {
         let day = unsafe { Self::from_u64_unchecked(u) };
         if day > Self::MAX {
-            bail!("UTC Day exceeding maximum: {}", day.to_u64());
+            return Err(UTCDayErrOutOfRange(day.0));
         }
         Ok(day)
     }
@@ -776,6 +785,19 @@ impl UTCDay {
         }
     }
 }
+
+/// Error type for UTCDay out of range
+#[derive(Debug)]
+pub struct UTCDayErrOutOfRange(u64);
+
+impl Display for UTCDayErrOutOfRange {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(f, "UTC day ({}) exceeding maximum", self.0)
+    }
+}
+
+#[cfg(any(feature = "std", feature = "nightly"))]
+impl Error for UTCDayErrOutOfRange {}
 
 impl UTCTransformations for UTCDay {
     #[inline]
@@ -927,9 +949,9 @@ impl DivAssign<u64> for UTCDay {
 }
 
 impl TryFrom<u64> for UTCDay {
-    type Error = anyhow::Error;
+    type Error = UTCDayErrOutOfRange;
 
-    fn try_from(value: u64) -> core::result::Result<Self, Self::Error> {
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
         Self::try_from_u64(value)
     }
 }
@@ -981,6 +1003,7 @@ impl From<UTCTimestamp> for UTCDay {
 /// ## Safety
 /// Unchecked methods are provided for use in hot paths requiring high levels of optimisation.
 /// These methods assume valid input.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct UTCTimeOfDay(u64);
 
@@ -1065,37 +1088,37 @@ impl UTCTimeOfDay {
     }
 
     /// Try to create UTC time of day from nanoseconds
-    pub fn try_from_nanos(nanos: u64) -> Result<Self> {
+    pub fn try_from_nanos(nanos: u64) -> Result<Self, UTCTimeOfDayError> {
         let tod = unsafe { Self::from_nanos_unchecked(nanos) };
         if tod > Self::MAX {
-            bail!("Nanoseconds not within a day! (nanos: {})", nanos);
+            return Err(UTCTimeOfDayError::ExcessNanos(nanos));
         }
         Ok(tod)
     }
 
     /// Try to create UTC time of day from microseconds
-    pub fn try_from_micros(micros: u64) -> Result<Self> {
+    pub fn try_from_micros(micros: u64) -> Result<Self, UTCTimeOfDayError> {
         let tod = unsafe { Self::from_micros_unchecked(micros) };
         if tod > Self::MAX {
-            bail!("Microseconds not within a day! (micros: {})", micros);
+            return Err(UTCTimeOfDayError::ExcessMicros(micros));
         }
         Ok(tod)
     }
 
     /// Try to create UTC time of day from milliseconds
-    pub fn try_from_millis(millis: u32) -> Result<Self> {
+    pub fn try_from_millis(millis: u32) -> Result<Self, UTCTimeOfDayError> {
         let tod = unsafe { Self::from_millis_unchecked(millis) };
         if tod > Self::MAX {
-            bail!("Milliseconds not within a day! (millis: {})", millis);
+            return Err(UTCTimeOfDayError::ExcessMillis(millis));
         }
         Ok(tod)
     }
 
     /// Try to create UTC time of day from seconds
-    pub fn try_from_secs(secs: u32) -> Result<Self> {
+    pub fn try_from_secs(secs: u32) -> Result<Self, UTCTimeOfDayError> {
         let tod = unsafe { Self::from_secs_unchecked(secs) };
         if tod > Self::MAX {
-            bail!("Seconds not within a day! (secs: {})", secs);
+            return Err(UTCTimeOfDayError::ExcessSeconds(secs));
         }
         Ok(tod)
     }
@@ -1104,7 +1127,7 @@ impl UTCTimeOfDay {
     ///
     /// Inputs are not limited by divisions. eg. 61 minutes is valid input, 61 seconds, etc.
     /// The time described must not exceed the number of nanoseconds in a day.
-    pub fn try_from_hhmmss(hrs: u8, mins: u8, secs: u8, subsec_ns: u32) -> Result<Self> {
+    pub fn try_from_hhmmss(hrs: u8, mins: u8, secs: u8, subsec_ns: u32) -> Result<Self, UTCTimeOfDayError> {
         Self::try_from_nanos(Self::_ns_from_hhmmss(hrs, mins, secs, subsec_ns))
     }
 
@@ -1165,8 +1188,7 @@ impl UTCTimeOfDay {
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
-    #[cfg(feature = "std")]
-    pub fn try_from_iso_tod(iso: &str) -> Result<Self> {
+    pub fn try_from_iso_tod(iso: &str) -> Result<Self, UTCTimeOfDayError> {
         let (hour_str, rem) = iso[1..].split_at(2); // remainder = ":mm:ss.nnnZ"
         let (minute_str, rem) = rem[1..].split_at(2); // remainder = ":ss.nnnZ"
         let (second_str, rem) = rem[1..].split_at(2); // remainder = ".nnnZ"
@@ -1180,10 +1202,7 @@ impl UTCTimeOfDay {
             let subsec_str = &rem[1..(rem_len - 1)]; // "nnn"
             let precision: u32 = subsec_str.len() as u32;
             if precision > 9 {
-                bail!(
-                    "Cannot parse ISO time-of-day: Precision ({}) exceeds maximum of 9",
-                    precision
-                );
+                return Err(UTCTimeOfDayError::ExcessPrecision(precision));
             }
             if precision == 0 {
                 0
@@ -1204,7 +1223,7 @@ impl UTCTimeOfDay {
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     pub fn as_iso_tod(&self, precision: Option<usize>) -> String {
         let mut s = format!("{self}");
         let len = if let Some(p) = precision {
@@ -1215,5 +1234,56 @@ impl UTCTimeOfDay {
         s.truncate(len);
         s.push('Z');
         s
+    }
+}
+
+/// Error type for UTCTimeOfDay methods
+#[derive(Debug)]
+pub enum UTCTimeOfDayError {
+    /// Error raised parsing int to string
+    ParseErr(ParseIntError),
+    /// Error raised due to excessive ISO precision
+    ExcessPrecision(u32),
+    /// Error raised due to nanos exceeding nanos in a day
+    ExcessNanos(u64),
+    /// Error raised due to micros exceeding micros in a day
+    ExcessMicros(u64),
+    /// Error raised due to millis exceeding millis in a day
+    ExcessMillis(u32),
+    /// Error raised due to seconds exceeding seconds in a day
+    ExcessSeconds(u32),
+}
+
+impl Display for UTCTimeOfDayError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::ParseErr(e) => e.fmt(f),
+            Self::ExcessPrecision(p) =>
+                write!(f, "ISO precision ({p}) exceeds maximum of 9"),
+            Self::ExcessNanos(n) =>
+                write!(f, "Nanoseconds ({n}) not within a day"),
+            Self::ExcessMicros(u) =>
+                write!(f, "Microseconds ({u}) not within a day"),
+            Self::ExcessMillis(m) =>
+                write!(f, "Milliseconds ({m}) not within a day"),
+            Self::ExcessSeconds(s) =>
+                write!(f, "Seconds ({s}) not within a day"),
+        }
+    }
+}
+
+#[cfg(any(feature = "std", feature = "nightly"))]
+impl Error for UTCTimeOfDayError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::ParseErr(e) => e.source(),
+            _ => None
+        }
+    }
+}
+
+impl From<ParseIntError> for UTCTimeOfDayError {
+    fn from(value: ParseIntError) -> Self {
+        Self::ParseErr(value)
     }
 }

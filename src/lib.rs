@@ -201,22 +201,32 @@
 #![warn(missing_debug_implementations)]
 #![warn(dead_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
+// TODO <https://github.com/rust-lang/rust/issues/103765>
+// Releasing in stable rust 1.81.0, 5th september!
+#![cfg_attr(all(not(feature = "std"), feature = "nightly"), feature(error_in_core))]
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
 
 pub mod date;
 pub mod time;
 #[rustfmt::skip]
 pub mod constants;
 
-use core::{
-    fmt::{Display, Formatter},
-    time::Duration,
-};
+use crate::date::{UTCDate, UTCDateError};
+use crate::time::{UTCTimeOfDay, UTCTimestamp, UTCTransformations, UTCTimeOfDayError};
+use core::fmt::{Display, Formatter};
+use core::time::Duration;
 
-#[cfg(feature = "std")]
-use anyhow::Result;
+#[cfg(feature = "alloc")]
+use alloc::string::String;
+use time::UTCDayErrOutOfRange;
 
-use date::UTCDate;
-use time::{UTCTimeOfDay, UTCTimestamp, UTCTransformations};
+// TODO <https://github.com/rust-lang/rust/issues/103765>
+#[cfg(feature = "nightly")]
+use core::error::Error;
+#[cfg(all(feature = "std", not(feature = "nightly")))]
+use std::error::Error;
 
 /// UTC Datetime.
 ///
@@ -249,6 +259,7 @@ use time::{UTCTimeOfDay, UTCTimestamp, UTCTransformations};
 /// assert_eq!(iso_datetime, "2023-06-15T10:18:08Z");
 /// ```
 ///
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct UTCDatetime {
     date: UTCDate,
@@ -324,8 +335,7 @@ impl UTCDatetime {
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
-    #[cfg(feature = "std")]
-    pub fn try_from_iso_datetime(iso: &str) -> Result<Self> {
+    pub fn try_from_iso_datetime(iso: &str) -> Result<Self, UTCDatetimeError> {
         let (date_str, tod_str) = iso.split_at(10);
         let date = UTCDate::try_from_iso_date(date_str)?;
         let tod = UTCTimeOfDay::try_from_iso_tod(tod_str)?;
@@ -342,7 +352,7 @@ impl UTCDatetime {
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     pub fn as_iso_datetime(&self, precision: Option<usize>) -> String {
         self.date.as_iso_date() + &self.tod.as_iso_tod(precision)
     }
@@ -371,5 +381,105 @@ impl From<UTCTimestamp> for UTCDatetime {
 impl From<Duration> for UTCDatetime {
     fn from(duration: Duration) -> Self {
         Self::from_duration(duration)
+    }
+}
+
+/// Error type for UTCDatetime methods
+#[derive(Debug)]
+pub enum UTCDatetimeError {
+    /// Error within UTC Date
+    UTCDate(UTCDateError),
+    /// Error within UTC Time of Day
+    UTCTimeOfDay(UTCTimeOfDayError),
+}
+
+impl Display for UTCDatetimeError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::UTCDate(e) => e.fmt(f),
+            Self::UTCTimeOfDay(e) => e.fmt(f),
+        }
+    }
+}
+
+#[cfg(any(feature = "std", feature = "nightly"))]
+impl Error for UTCDatetimeError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::UTCDate(e) => e.source(),
+            Self::UTCTimeOfDay(e) => e.source(),
+        }
+    }
+}
+
+impl From<UTCDateError> for UTCDatetimeError {
+    fn from(value: UTCDateError) -> Self {
+        Self::UTCDate(value)
+    }
+}
+
+impl From<UTCTimeOfDayError> for UTCDatetimeError {
+    fn from(value: UTCTimeOfDayError) -> Self {
+        Self::UTCTimeOfDay(value)
+    }
+}
+
+/// UTC Datetime crate level error type
+#[derive(Debug)]
+pub enum UTCError {
+    /// Error within UTC Date
+    UTCDate(UTCDateError),
+    /// Error within UTC Time of Day
+    UTCTimeOfDay(UTCTimeOfDayError),
+    /// Error within UTC Day
+    UTCDay(UTCDayErrOutOfRange),
+    /// Error within UTC Datetime
+    UTCDatetime(UTCDatetimeError),
+}
+
+impl Display for UTCError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::UTCDate(e) => e.fmt(f),
+            Self::UTCTimeOfDay(e) => e.fmt(f),
+            Self::UTCDay(e) => e.fmt(f),
+            Self::UTCDatetime(e) => e.fmt(f),
+        }
+    }
+}
+
+#[cfg(any(feature = "std", feature = "nightly"))]
+impl Error for UTCError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::UTCDate(e) => e.source(),
+            Self::UTCTimeOfDay(e) => e.source(),
+            Self::UTCDay(e) => e.source(),
+            Self::UTCDatetime(e) => e.source(),
+        }
+    }
+}
+
+impl From<UTCDateError> for UTCError {
+    fn from(value: UTCDateError) -> Self {
+        Self::UTCDate(value)
+    }
+}
+
+impl From<UTCTimeOfDayError> for UTCError {
+    fn from(value: UTCTimeOfDayError) -> Self {
+        Self::UTCTimeOfDay(value)
+    }
+}
+
+impl From<UTCDayErrOutOfRange> for UTCError {
+    fn from(value: UTCDayErrOutOfRange) -> Self {
+        Self::UTCDay(value)
+    }
+}
+
+impl From<UTCDatetimeError> for UTCError {
+    fn from(value: UTCDatetimeError) -> Self {
+        Self::UTCDatetime(value)
     }
 }

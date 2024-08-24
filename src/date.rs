@@ -4,14 +4,22 @@
 //! proleptic Gregorian Calendar (the *civil* calendar),
 //! to create UTC dates.
 
-use core::{
-    fmt::{Display, Formatter},
-    time::Duration,
+use crate::time::{UTCDay, UTCTimestamp, UTCTransformations};
+use core::fmt::{Display, Formatter};
+use core::num::ParseIntError;
+use core::time::Duration;
+
+#[cfg(feature = "alloc")]
+use alloc::{
+    string::String,
+    format
 };
 
-use anyhow::{bail, Result};
-
-use crate::time::{UTCDay, UTCTimestamp, UTCTransformations};
+// TODO <https://github.com/rust-lang/rust/issues/103765>
+#[cfg(feature = "nightly")]
+use core::error::Error;
+#[cfg(all(feature ="std", not(feature = "nightly")))]
+use std::error::Error;
 
 /// UTC Date.
 ///
@@ -50,6 +58,7 @@ use crate::time::{UTCDay, UTCTimestamp, UTCTransformations};
 /// ## Safety
 /// Unchecked methods are provided for use in hot paths requiring high levels of optimisation.
 /// These methods assume valid input.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct UTCDate {
     era: u32,
@@ -120,21 +129,21 @@ impl UTCDate {
     }
 
     /// Try to create a UTC Date from provided year, month and day.
-    pub fn try_from_components(year: u64, month: u8, day: u8) -> Result<Self> {
+    pub fn try_from_components(year: u64, month: u8, day: u8) -> Result<Self, UTCDateError> {
         if !(Self::MIN_YEAR..=Self::MAX_YEAR).contains(&year) {
-            bail!("Year out of range! (year: {:04})", year);
+            return Err(UTCDateError::YearOutOfRange(year));
         }
         if month == 0 || month > 12 {
-            bail!("Month out of range! (month: {:02})", month);
+            return Err(UTCDateError::MonthOutOfRange(month));
         }
         // force create
         let date = unsafe { Self::from_components_unchecked(year, month, day) };
         // then check
         if date.day == 0 || date.day > date.days_in_month() {
-            bail!("Day out of range! (date: {date}");
+            return Err(UTCDateError::DayOutOfRange(date));
         }
         if date > UTCDate::MAX {
-            bail!("Date out of range! (date: {date}");
+            return Err(UTCDateError::DateOutOfRange(date));
         }
         Ok(date)
     }
@@ -228,8 +237,7 @@ impl UTCDate {
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
-    #[cfg(feature = "std")]
-    pub fn try_from_iso_date(iso: &str) -> Result<Self> {
+    pub fn try_from_iso_date(iso: &str) -> Result<Self, UTCDateError> {
         // handle slice
         let (year_str, rem) = iso.split_at(4); // remainder = "-MM-DD"
         let (month_str, rem) = rem[1..].split_at(2); // remainder = "-DD"
@@ -246,7 +254,7 @@ impl UTCDate {
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     pub fn as_iso_date(&self) -> String {
         format!("{self}")
     }
@@ -314,5 +322,52 @@ impl From<UTCTimestamp> for UTCDate {
 impl From<UTCDay> for UTCDate {
     fn from(utc_day: UTCDay) -> Self {
         Self::from_day(utc_day)
+    }
+}
+
+/// Error type for UTCDate methods
+#[derive(Debug)]
+pub enum UTCDateError {
+    /// Error raised parsing int to string
+    ParseErr(ParseIntError),
+    /// Error raised due to out of range year
+    YearOutOfRange(u64),
+    /// Error raised due to out of range month
+    MonthOutOfRange(u8),
+    /// Error raised due to out of range day
+    DayOutOfRange(UTCDate),
+    /// Error raised due to out of range date
+    DateOutOfRange(UTCDate)
+}
+
+impl Display for UTCDateError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::ParseErr(e) => e.fmt(f),
+            Self::YearOutOfRange(y) =>
+                write!(f, "Year ({y}) out of range!"),
+            Self::MonthOutOfRange(m) =>
+                write!(f, "Month ({m}) out of range!"),
+            Self::DayOutOfRange(d) =>
+                write!(f, "Day ({d}) out of range!"),
+            Self::DateOutOfRange(date) =>
+                write!(f, "Date ({date}) out of range!"),
+        }
+    }
+}
+
+#[cfg(any(feature = "std", feature = "nightly"))]
+impl Error for UTCDateError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::ParseErr(e) => e.source(),
+            _ => None
+        }
+    }
+}
+
+impl From<ParseIntError> for UTCDateError {
+    fn from(value: ParseIntError) -> Self {
+        Self::ParseErr(value)
     }
 }
