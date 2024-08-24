@@ -181,3 +181,11 @@ fn test_date_transformations() -> Result<(), UTCError> {
 
     Ok(())
 }
+
+#[cfg(feature = "serde")]
+#[test]
+fn test_date_serde() {
+    let date = UTCDate::from_day(UTCDay::try_from_u64(19959).unwrap());
+    let v = serde_json::to_value(&date).unwrap();
+    assert_eq!(date, serde_json::from_value(v).unwrap())
+}

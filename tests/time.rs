@@ -366,3 +366,19 @@ fn test_utc_tod() -> Result<(), UTCError> {
     );
     Ok(())
 }
+
+#[cfg(feature = "serde")]
+#[test]
+fn test_time_serde() {
+    let timestamp = UTCTimestamp::from_day(UTCDay::try_from_u64(19959).unwrap());
+    let v = serde_json::to_value(&timestamp).unwrap();
+    assert_eq!(timestamp, serde_json::from_value(v).unwrap());
+
+    let day = UTCDay::try_from_u64(19959).unwrap();
+    let v = serde_json::to_value(&day).unwrap();
+    assert_eq!(day, serde_json::from_value(v).unwrap());
+
+    let time_of_day = UTCTimeOfDay::try_from_hhmmss(17, 50, 23, 0).unwrap();
+    let v = serde_json::to_value(&time_of_day).unwrap();
+    assert_eq!(time_of_day, serde_json::from_value(v).unwrap());
+}

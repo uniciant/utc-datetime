@@ -137,3 +137,11 @@ fn test_datetime_iso_conversions() -> Result<(), UTCError> {
     }
     Ok(())
 }
+
+#[cfg(feature = "serde")]
+#[test]
+fn test_datetime_serde() {
+    let datetime = UTCDatetime::from_secs(1724493234);
+    let v = serde_json::to_value(&datetime).unwrap();
+    assert_eq!(datetime, serde_json::from_value(v).unwrap());
+}
