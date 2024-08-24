@@ -626,6 +626,7 @@ where
 /// ## Safety
 /// Unchecked methods are provided for use in hot paths requiring high levels of optimisation.
 /// These methods assume valid input.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct UTCDay(u64);
 
