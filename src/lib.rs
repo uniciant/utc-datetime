@@ -344,7 +344,10 @@ impl UTCDatetime {
     pub fn try_from_iso_datetime(iso: &str) -> Result<Self, UTCDatetimeError> {
         let len = iso.len();
         if len < Self::MIN_ISO_DATETIME_LEN {
-            return Err(UTCDatetimeError::InsufficientStrLen(len, Self::MIN_ISO_DATETIME_LEN));
+            return Err(UTCDatetimeError::InsufficientStrLen(
+                len,
+                Self::MIN_ISO_DATETIME_LEN,
+            ));
         }
         let (date_str, tod_str) = iso.split_at(10);
         let date = UTCDate::try_from_iso_date(date_str)?;
@@ -379,7 +382,11 @@ impl UTCDatetime {
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
-    pub fn write_iso_datetime(&self, buf: &mut [u8], precision: usize) -> Result<usize, UTCDatetimeError>{
+    pub fn write_iso_datetime(
+        &self,
+        buf: &mut [u8],
+        precision: usize,
+    ) -> Result<usize, UTCDatetimeError> {
         let write_len = Self::iso_datetime_len(precision);
         if write_len > buf.len() {
             return Err(UTCDatetimeError::InsufficientStrLen(buf.len(), write_len));
@@ -439,7 +446,9 @@ impl Display for UTCDatetimeError {
         match self {
             Self::UTCDate(e) => e.fmt(f),
             Self::UTCTimeOfDay(e) => e.fmt(f),
-            Self::InsufficientStrLen(l, m) => write!(f, "Insufficient ISO datetime str len ({l}), {m} required"),
+            Self::InsufficientStrLen(l, m) => {
+                write!(f, "Insufficient ISO datetime str len ({l}), {m} required")
+            }
         }
     }
 }

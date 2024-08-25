@@ -1206,12 +1206,14 @@ impl UTCTimeOfDay {
     pub fn try_from_iso_tod(iso: &str) -> Result<Self, UTCTimeOfDayError> {
         let len = iso.len();
         if len < Self::MIN_ISO_TOD_LEN {
-            return Err(UTCTimeOfDayError::InsufficientStrLen(len, Self::MIN_ISO_TOD_LEN));
+            return Err(UTCTimeOfDayError::InsufficientStrLen(
+                len,
+                Self::MIN_ISO_TOD_LEN,
+            ));
         }
         let (hour_str, rem) = iso[1..].split_at(2); // remainder = ":mm:ss.nnnZ"
         let (minute_str, rem) = rem[1..].split_at(2); // remainder = ":ss.nnnZ"
         let (second_str, rem) = rem[1..].split_at(2); // remainder = ".nnnZ"
-        // parse
         let hrs: u8 = hour_str.parse()?;
         let mins: u8 = minute_str.parse()?;
         let secs: u8 = second_str.parse()?;
@@ -1270,7 +1272,11 @@ impl UTCTimeOfDay {
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
-    pub fn write_iso_tod(&self, buf: &mut [u8], precision: usize) -> Result<usize, UTCTimeOfDayError> {
+    pub fn write_iso_tod(
+        &self,
+        buf: &mut [u8],
+        precision: usize,
+    ) -> Result<usize, UTCTimeOfDayError> {
         let write_len = Self::iso_tod_len(precision);
         if write_len > buf.len() {
             return Err(UTCTimeOfDayError::InsufficientStrLen(buf.len(), write_len));
@@ -1322,7 +1328,9 @@ impl Display for UTCTimeOfDayError {
             Self::ExcessMicros(u) => write!(f, "Microseconds ({u}) not within a day"),
             Self::ExcessMillis(m) => write!(f, "Milliseconds ({m}) not within a day"),
             Self::ExcessSeconds(s) => write!(f, "Seconds ({s}) not within a day"),
-            Self::InsufficientStrLen(l, m) => write!(f, "Insufficient ISO time str len ({l}), {m} required"),
+            Self::InsufficientStrLen(l, m) => {
+                write!(f, "Insufficient ISO time str len ({l}), {m} required")
+            }
         }
     }
 }

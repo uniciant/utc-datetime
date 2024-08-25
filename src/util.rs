@@ -3,7 +3,7 @@
 /// Utility for no-alloc str writing to a buffer via `core::fmt`
 pub struct StrWriter<'a> {
     pub buf: &'a mut [u8],
-    pub written: usize
+    pub written: usize,
 }
 
 impl<'a> StrWriter<'a> {
@@ -20,7 +20,7 @@ impl<'a> core::fmt::Write for StrWriter<'a> {
         let write_len = remaining.min(s.len());
         let write_bytes = &s.as_bytes()[..write_len];
         // infallible truncating write
-        self.buf[self.written..][..write_len].copy_from_slice(&write_bytes);
+        self.buf[self.written..][..write_len].copy_from_slice(write_bytes);
         self.written += write_len;
         Ok(())
     }
