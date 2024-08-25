@@ -3,7 +3,8 @@
 //! Implements core time concepts via UTC Timestamps, UTC Days and UTC Time-of-Days.
 
 use crate::constants::*;
-use core::fmt::{Display, Formatter};
+use crate::util::StrWriter;
+use core::fmt::{Display, Formatter, Write};
 use core::num::ParseIntError;
 use core::ops::*;
 use core::time::Duration;
@@ -1028,6 +1029,12 @@ impl UTCTimeOfDay {
     /// Equal to the number of nanoseconds in a day.
     pub const MAX: Self = Self(NANOS_PER_DAY - 1);
 
+    /// The minimum length of an ISO time (in UTF8 characters)
+    pub const MIN_ISO_TOD_LEN: usize = 10;
+
+    /// The maximum supported subsecond precision of an ISO time
+    pub const MAX_ISO_TOD_PRECISION: usize = 9;
+
     /// Unchecked method to create time of day from nanoseconds
     ///
     /// ### Safety
@@ -1185,58 +1192,100 @@ impl UTCTimeOfDay {
         timestamp.as_tod()
     }
 
-    /// Try parse time-of-day from string in the format:
+    /// Try parse time-of-day from an ISO str in the format:
     /// * `Thh:mm:ssZ`
     /// * `Thh:mm:ss.nnnZ` (up to 9 decimal places)
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
     pub fn try_from_iso_tod(iso: &str) -> Result<Self, UTCTimeOfDayError> {
+        let len = iso.len();
+        if len < Self::MIN_ISO_TOD_LEN {
+            return Err(UTCTimeOfDayError::InsufficientStrLen(len, Self::MIN_ISO_TOD_LEN));
+        }
         let (hour_str, rem) = iso[1..].split_at(2); // remainder = ":mm:ss.nnnZ"
         let (minute_str, rem) = rem[1..].split_at(2); // remainder = ":ss.nnnZ"
         let (second_str, rem) = rem[1..].split_at(2); // remainder = ".nnnZ"
-
+        // parse
         let hrs: u8 = hour_str.parse()?;
         let mins: u8 = minute_str.parse()?;
         let secs: u8 = second_str.parse()?;
-
+        // calculate subseconds
         let rem_len = rem.len();
         let subsec_ns: u32 = if rem_len > 1 {
             let subsec_str = &rem[1..(rem_len - 1)]; // "nnn"
             let precision: u32 = subsec_str.len() as u32;
-            if precision > 9 {
+            if precision > Self::MAX_ISO_TOD_PRECISION as u32 {
                 return Err(UTCTimeOfDayError::ExcessPrecision(precision));
             }
             if precision == 0 {
                 0
             } else {
                 let subsec: u32 = subsec_str.parse()?;
-                subsec * 10u32.pow(9 - precision)
+                subsec * 10u32.pow(Self::MAX_ISO_TOD_PRECISION as u32 - precision)
             }
         } else {
             0
         };
-
         Self::try_from_hhmmss(hrs, mins, secs, subsec_ns)
     }
 
     /// Return time-of-day as a string in the format:
-    /// * Precision = `None`: `Thh:mm:ssZ`
-    /// * Precision = `Some(3)`: `Thh:mm:ss.nnnZ`
+    /// * Precision = `0`: `Thh:mm:ssZ`
+    /// * Precision = `3`: `Thh:mm:ss.nnnZ`
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
     #[cfg(feature = "alloc")]
-    pub fn as_iso_tod(&self, precision: Option<usize>) -> String {
+    pub fn as_iso_tod(&self, precision: usize) -> String {
+        let len = Self::iso_tod_len(precision);
         let mut s = format!("{self}");
-        let len = if let Some(p) = precision {
-            10 + p.min(9)
-        } else {
-            9
-        };
         s.truncate(len);
         s.push('Z');
         s
+    }
+
+    /// Internal truncated buffer write
+    #[inline]
+    pub(crate) fn _write_iso_tod_trunc(&self, w: &mut StrWriter) {
+        // unwrap infallible
+        write!(w, "{self}").unwrap();
+        w.buf[w.written - 1] = b'Z';
+    }
+
+    /// Write time-of-day to a buffer in the format:
+    /// * Precision = `0`: `Thh:mm:ssZ`
+    /// * Precision = `3`: `Thh:mm:ss.nnnZ`
+    ///
+    /// The buffer should have a minimum length as given by [UTCTimeOfDay::iso_tod_len].
+    ///
+    /// A buffer of insufficient length will error ([UTCTimeOfDayError::InsufficientStrLen]).
+    ///
+    /// Returns number of UTF8 characters (bytes) written
+    ///
+    /// Conforms to ISO 8601:
+    /// <https://www.w3.org/TR/NOTE-datetime>
+    pub fn write_iso_tod(&self, buf: &mut [u8], precision: usize) -> Result<usize, UTCTimeOfDayError> {
+        let write_len = Self::iso_tod_len(precision);
+        if write_len > buf.len() {
+            return Err(UTCTimeOfDayError::InsufficientStrLen(buf.len(), write_len));
+        }
+        let mut writer = StrWriter::new(&mut buf[..write_len]);
+        self._write_iso_tod_trunc(&mut writer);
+        Ok(writer.written)
+    }
+
+    /// Calculate the number of characters in an ISO time-of-day str
+    #[inline]
+    pub const fn iso_tod_len(precision: usize) -> usize {
+        if precision == 0 {
+            Self::MIN_ISO_TOD_LEN
+        } else if precision < Self::MAX_ISO_TOD_PRECISION {
+            Self::MIN_ISO_TOD_LEN + precision + 1
+        } else {
+            // clamp to precision to max
+            Self::MIN_ISO_TOD_LEN + Self::MAX_ISO_TOD_PRECISION + 1
+        }
     }
 }
 
@@ -1255,6 +1304,8 @@ pub enum UTCTimeOfDayError {
     ExcessMillis(u32),
     /// Error raised due to seconds exceeding seconds in a day
     ExcessSeconds(u32),
+    /// Error raised due to insufficient length of input ISO time-of-day str
+    InsufficientStrLen(usize, usize),
 }
 
 impl Display for UTCTimeOfDayError {
@@ -1266,6 +1317,7 @@ impl Display for UTCTimeOfDayError {
             Self::ExcessMicros(u) => write!(f, "Microseconds ({u}) not within a day"),
             Self::ExcessMillis(m) => write!(f, "Milliseconds ({m}) not within a day"),
             Self::ExcessSeconds(s) => write!(f, "Seconds ({s}) not within a day"),
+            Self::InsufficientStrLen(l, m) => write!(f, "Insufficient ISO time str len ({l}), {m} required"),
         }
     }
 }

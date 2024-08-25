@@ -5,7 +5,8 @@
 //! to create UTC dates.
 
 use crate::time::{UTCDay, UTCTimestamp, UTCTransformations};
-use core::fmt::{Display, Formatter};
+use crate::util::StrWriter;
+use core::fmt::{Display, Formatter, Write};
 use core::num::ParseIntError;
 use core::time::Duration;
 
@@ -106,6 +107,9 @@ impl UTCDate {
 
     /// The minimum year supported
     pub const MIN_YEAR: u64 = 1970;
+
+    /// The length of an ISO date (in characters)
+    pub const ISO_DATE_LEN: usize = 10;
 
     /// Unchecked method to create a UTC Date from provided year, month and day.
     ///
@@ -229,12 +233,16 @@ impl UTCDate {
         }
     }
 
-    /// Try parse date from string in the format:
+    /// Try parse date from str in the format:
     /// * `YYYY-MM-DD`
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
     pub fn try_from_iso_date(iso: &str) -> Result<Self, UTCDateError> {
+        let len = iso.len();
+        if len != Self::ISO_DATE_LEN {
+            return Err(UTCDateError::InsufficientStrLen(len));
+        }
         // handle slice
         let (year_str, rem) = iso.split_at(4); // remainder = "-MM-DD"
         let (month_str, rem) = rem[1..].split_at(2); // remainder = "-DD"
@@ -254,6 +262,34 @@ impl UTCDate {
     #[cfg(feature = "alloc")]
     pub fn as_iso_date(&self) -> String {
         format!("{self}")
+    }
+
+    /// Internal truncated buffer write
+    #[inline]
+    pub(crate) fn _write_iso_date_trunc(&self, w: &mut StrWriter) {
+        // unwrap infallible
+        write!(w, "{self}").unwrap();
+    }
+
+    /// Write an ISO date to a buffer in the format:
+    /// * `YYYY-MM-DD`
+    ///
+    /// The buffer should have minimum length of [UTCDate::ISO_DATE_LEN] (10).
+    ///
+    /// A buffer of insufficient length will error ([UTCDateError::InsufficientStrLen]).
+    ///
+    /// Returns number of UTF8 characters (bytes) written
+    ///
+    /// Conforms to ISO 8601:
+    /// <https://www.w3.org/TR/NOTE-datetime>
+    pub fn write_iso_date(&self, buf: &mut [u8]) -> Result<usize, UTCDateError> {
+        let write_len = Self::ISO_DATE_LEN;
+        if write_len > buf.len() {
+            return Err(UTCDateError::InsufficientStrLen(buf.len()));
+        }
+        let mut writer = StrWriter::new(&mut buf[..write_len]);
+        self._write_iso_date_trunc(&mut writer);
+        Ok(writer.written)
     }
 }
 
@@ -335,6 +371,8 @@ pub enum UTCDateError {
     DayOutOfRange(UTCDate),
     /// Error raised due to out of range date
     DateOutOfRange(UTCDate),
+    /// Error raised due to invalid ISO date length
+    InsufficientStrLen(usize),
 }
 
 impl Display for UTCDateError {
@@ -345,6 +383,7 @@ impl Display for UTCDateError {
             Self::MonthOutOfRange(m) => write!(f, "Month ({m}) out of range!"),
             Self::DayOutOfRange(d) => write!(f, "Day ({d}) out of range!"),
             Self::DateOutOfRange(date) => write!(f, "Date ({date}) out of range!"),
+            Self::InsufficientStrLen(l) => write!(f, "Insufficient ISO date str length ({l}), 10 required"),
         }
     }
 }

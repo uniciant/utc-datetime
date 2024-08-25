@@ -212,6 +212,7 @@ pub mod date;
 pub mod time;
 #[rustfmt::skip]
 pub mod constants;
+mod util;
 
 use crate::date::{UTCDate, UTCDateError};
 use crate::time::{UTCTimeOfDay, UTCTimeOfDayError, UTCTimestamp, UTCTransformations};
@@ -221,6 +222,7 @@ use core::time::Duration;
 #[cfg(feature = "alloc")]
 use alloc::string::String;
 use time::UTCDayErrOutOfRange;
+use util::StrWriter;
 
 // TODO <https://github.com/rust-lang/rust/issues/103765>
 #[cfg(feature = "nightly")]
@@ -292,6 +294,9 @@ impl UTCDatetime {
         tod: unsafe { UTCTimeOfDay::from_nanos_unchecked(25215999999999) },
     };
 
+    /// The minimum length of an ISO datetime (in UTF8 characters)
+    pub const MIN_ISO_DATETIME_LEN: usize = UTCTimeOfDay::MIN_ISO_TOD_LEN + UTCDate::ISO_DATE_LEN;
+
     /// Create a datetime frome date and time-of-day components.
     #[inline]
     pub const fn from_components(date: UTCDate, tod: UTCTimeOfDay) -> Self {
@@ -326,7 +331,7 @@ impl UTCDatetime {
         self.tod
     }
 
-    /// Try parse datetime from string in the format:
+    /// Try parse datetime from str in the format:
     ///
     /// * `YYYY-MM-DDThh:mm:ssZ` or
     /// * `YYYY-MM-DDThh:mm:ss.nnnZ`
@@ -336,6 +341,10 @@ impl UTCDatetime {
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
     pub fn try_from_iso_datetime(iso: &str) -> Result<Self, UTCDatetimeError> {
+        let len = iso.len();
+        if len < Self::MIN_ISO_DATETIME_LEN {
+            return Err(UTCDatetimeError::InsufficientStrLen(len, Self::MIN_ISO_DATETIME_LEN));
+        }
         let (date_str, tod_str) = iso.split_at(10);
         let date = UTCDate::try_from_iso_date(date_str)?;
         let tod = UTCTimeOfDay::try_from_iso_tod(tod_str)?;
@@ -343,18 +352,47 @@ impl UTCDatetime {
     }
 
     /// Return datetime as a string in the format:
-    /// * Precision = `None`: `YYYY-MM-DDThh:mm:ssZ`
-    /// * Precision = `Some(3)`: `YYYY-MM-DDThh:mm:ss.nnnZ`
+    /// * Precision = `0`: `YYYY-MM-DDThh:mm:ssZ`
+    /// * Precision = `3`: `YYYY-MM-DDThh:mm:ss.nnnZ`
     ///
-    /// If specified, `precision` denotes the number decimal places included after the
+    /// If `precision` denotes the number decimal places included after the
     /// seconds, limited to 9 decimal places (nanosecond precision).
-    /// If `None`, no decimal component is included.
+    /// If `0`, no decimal component is included.
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
     #[cfg(feature = "alloc")]
-    pub fn as_iso_datetime(&self, precision: Option<usize>) -> String {
+    pub fn as_iso_datetime(&self, precision: usize) -> String {
         self.date.as_iso_date() + &self.tod.as_iso_tod(precision)
+    }
+
+    /// Write an ISO datetime to a buffer in the format:
+    /// * Precision = `0`: `YYYY-MM-DDThh:mm:ssZ`
+    /// * Precision = `3`: `YYYY-MM-DDThh:mm:ss.nnnZ`
+    ///
+    /// The buffer should have a minimum length as given by [UTCDatetime::iso_datetime_len].
+    ///
+    /// A buffer of insufficient length will error ([UTCDatetimeError::InsufficientStrLen]).
+    ///
+    /// Returns number of UTF8 characters (bytes) written
+    ///
+    /// Conforms to ISO 8601:
+    /// <https://www.w3.org/TR/NOTE-datetime>
+    pub fn write_iso_datetime(&self, buf: &mut [u8], precision: usize) -> Result<usize, UTCDatetimeError>{
+        let write_len = Self::iso_datetime_len(precision);
+        if write_len > buf.len() {
+            return Err(UTCDatetimeError::InsufficientStrLen(buf.len(), write_len));
+        }
+        let mut writer = StrWriter::new(&mut buf[..write_len]);
+        self.date._write_iso_date_trunc(&mut writer);
+        self.tod._write_iso_tod_trunc(&mut writer);
+        Ok(writer.written)
+    }
+
+    /// Calculate the number of characters in an ISO datetime str
+    #[inline]
+    pub const fn iso_datetime_len(precision: usize) -> usize {
+        UTCTimeOfDay::iso_tod_len(precision) + UTCDate::ISO_DATE_LEN
     }
 }
 
@@ -391,6 +429,8 @@ pub enum UTCDatetimeError {
     UTCDate(UTCDateError),
     /// Error within UTC Time of Day
     UTCTimeOfDay(UTCTimeOfDayError),
+    /// Error raised due to insufficient length of input ISO datetime str
+    InsufficientStrLen(usize, usize),
 }
 
 impl Display for UTCDatetimeError {
@@ -398,6 +438,7 @@ impl Display for UTCDatetimeError {
         match self {
             Self::UTCDate(e) => e.fmt(f),
             Self::UTCTimeOfDay(e) => e.fmt(f),
+            Self::InsufficientStrLen(l, m) => write!(f, "Insufficient ISO datetime str len ({l}), {m} required"),
         }
     }
 }
@@ -408,6 +449,7 @@ impl Error for UTCDatetimeError {
         match self {
             Self::UTCDate(e) => e.source(),
             Self::UTCTimeOfDay(e) => e.source(),
+            _ => None,
         }
     }
 }
