@@ -1240,7 +1240,7 @@ impl UTCTimeOfDay {
     pub fn as_iso_tod(&self, precision: usize) -> String {
         let len = Self::iso_tod_len(precision);
         let mut s = format!("{self}");
-        s.truncate(len);
+        s.truncate(len - 1);
         s.push('Z');
         s
     }
