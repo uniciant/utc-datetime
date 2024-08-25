@@ -348,7 +348,6 @@ fn test_utc_tod() -> Result<(), UTCError> {
         }
     }
 
-
     // test unit conversions
     let secs_from_tod = tod_from_timestamp.as_secs();
     let millis_from_tod = tod_from_timestamp.as_millis();
