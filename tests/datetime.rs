@@ -93,24 +93,23 @@ fn test_datetime_from_raw_components() -> Result<(), UTCError> {
     Ok(())
 }
 
-#[cfg(feature = "alloc")]
 #[test]
 fn test_datetime_iso_conversions() -> Result<(), UTCError> {
     let test_cases = [
-        (1970, 1, 1, 0, None, "1970-01-01T00:00:00Z"), // thu, 00:00:00
-        (1970, 1, 1, 0, Some(0), "1970-01-01T00:00:00.Z"), // thu, 00:00:00.
-        (1970, 1, 1, 0, Some(3), "1970-01-01T00:00:00.000Z"), // thu, 00:00:00.000
-        (1970, 1, 1, 0, Some(9), "1970-01-01T00:00:00.000000000Z"), // thu, 00:00:00.000000000
-        (1970, 1, 1, 0, Some(11), "1970-01-01T00:00:00.000000000Z"), // thu, 00:00:00.000000000
+        (1970, 1, 1, 0, 0, "1970-01-01T00:00:00Z"), // thu, 00:00:00
+        (1970, 1, 1, 0, 3, "1970-01-01T00:00:00.000Z"), // thu, 00:00:00.000
+        (1970, 1, 1, 0, 9, "1970-01-01T00:00:00.000000000Z"), // thu, 00:00:00.000000000
+        (1970, 1, 1, 0, 11, "1970-01-01T00:00:00.000000000Z"), // thu, 00:00:00.000000000
         (
             2023,
             6,
             14,
             33_609_648_000_000,
-            Some(3),
+            3,
             "2023-06-14T09:20:09.648Z",
         ), // wed, 09:20:09.648
     ];
+    let mut buf = [0; UTCDatetime::iso_datetime_len(9)];
 
     // run iso conversion test cases
     for (year, month, day, tod_ns, precision, iso_datetime) in test_cases {
@@ -118,11 +117,25 @@ fn test_datetime_iso_conversions() -> Result<(), UTCError> {
         let tod = UTCTimeOfDay::try_from_nanos(tod_ns)?;
         let datetime_from_components = UTCDatetime::from_components(date, tod);
         let datetime_from_iso = UTCDatetime::try_from_iso_datetime(iso_datetime)?;
+        #[cfg(feature = "alloc")]
         assert_eq!(
             datetime_from_components.as_iso_datetime(precision),
             iso_datetime
         );
+        let written = datetime_from_components.write_iso_datetime(&mut buf, precision)?;
+        let iso_raw_str = core::str::from_utf8(&buf[..written]).unwrap();
+        assert_eq!(iso_raw_str.len(), UTCDatetime::iso_datetime_len(precision));
+        assert_eq!(iso_datetime.as_bytes(), &buf[..written]);
+        assert_eq!(iso_datetime, iso_raw_str);
         assert_eq!(datetime_from_iso, datetime_from_components);
+        // test maybe-invalid buf len
+        let mut buf = [0; 3];
+        let result = datetime_from_components.write_iso_datetime(&mut buf, precision);
+        if buf.len() < UTCDatetime::iso_datetime_len(precision) {
+            assert!(result.is_err())
+        } else {
+            assert!(result.is_ok())
+        }
     }
 
     // test invalid iso dates

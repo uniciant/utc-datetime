@@ -312,7 +312,7 @@ fn test_utc_tod() -> Result<(), UTCError> {
     // test iso conversions
     #[cfg(feature = "alloc")]
     {
-        let iso_from_tod = tod_from_timestamp.as_iso_tod(Some(9));
+        let iso_from_tod = tod_from_timestamp.as_iso_tod(9);
         let tod_from_iso = UTCTimeOfDay::try_from_iso_tod(&iso_from_tod)?;
         assert_eq!(tod_from_iso, tod_from_timestamp);
         assert_eq!(
@@ -330,6 +330,24 @@ fn test_utc_tod() -> Result<(), UTCError> {
         assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.9999999990Z").is_err());
         // invalid precision
     }
+    // test no-alloc iso conversions
+    let mut buf = [0; UTCTimeOfDay::iso_tod_len(9)];
+    for precision in 0..13 {
+        let written = tod_from_timestamp.write_iso_tod(&mut buf, precision)?;
+        let iso_raw_str = core::str::from_utf8(&buf[..written]).unwrap();
+        assert_eq!(iso_raw_str.len(), UTCTimeOfDay::iso_tod_len(precision));
+        #[cfg(feature = "alloc")]
+        assert_eq!(tod_from_timestamp.as_iso_tod(precision), iso_raw_str);
+        // test maybe-invalid buf len
+        let mut buf = [0; 5];
+        let result = tod_from_timestamp.write_iso_tod(&mut buf, precision);
+        if buf.len() < UTCTimeOfDay::iso_tod_len(precision) {
+            assert!(result.is_err())
+        } else {
+            assert!(result.is_ok())
+        }
+    }
+
 
     // test unit conversions
     let secs_from_tod = tod_from_timestamp.as_secs();

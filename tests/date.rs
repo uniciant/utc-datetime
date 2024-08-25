@@ -63,7 +63,6 @@ fn test_date_from_day() -> Result<(), UTCError> {
 }
 
 #[test]
-#[cfg(feature = "std")]
 fn test_date_iso_conversions() -> Result<(), UTCError> {
     let test_cases = [
         (2023, 6, 14, true, "2023-06-14"),   // valid recent date
@@ -80,6 +79,7 @@ fn test_date_iso_conversions() -> Result<(), UTCError> {
         (2023, 9, 0, false, "2023-0a-00"),   // invalid date, month not integer
         (2023, 9, 0, false, "2023-09-0a"),   // invalid date, day not integer
     ];
+    let mut buf = [0; UTCDate::ISO_DATE_LEN];
 
     for (year, month, day, case_is_valid, iso_date) in test_cases {
         match UTCDate::try_from_iso_date(iso_date) {
@@ -87,7 +87,14 @@ fn test_date_iso_conversions() -> Result<(), UTCError> {
                 assert!(case_is_valid);
                 let date_from_comp = UTCDate::try_from_components(year, month, day)?;
                 assert_eq!(date_from_comp, date_from_iso);
+                #[cfg(feature = "alloc")]
                 assert_eq!(iso_date, date_from_comp.as_iso_date());
+                let written = date_from_comp.write_iso_date(&mut buf)?;
+                assert_eq!(iso_date.as_bytes(), &buf[..written]);
+                assert_eq!(iso_date, core::str::from_utf8(&buf[..written]).unwrap());
+                // test invalid buf len
+                let mut buf = [0; 1];
+                assert!(date_from_comp.write_iso_date(&mut buf).is_err());
             }
             Err(_) => {
                 assert!(!case_is_valid);
@@ -96,21 +103,23 @@ fn test_date_iso_conversions() -> Result<(), UTCError> {
     }
 
     // test transform from system time
-    let date_from_system_time = UTCDate::try_from_system_time().unwrap();
-    assert!(date_from_system_time >= UTCDate::MIN);
-    assert!(date_from_system_time <= UTCDate::MAX);
-    // test debug & display
-    println!("{:?}:{date_from_system_time}", date_from_system_time);
-    // test default, clone & copy, ord
-    assert_eq!(UTCDate::default().clone(), UTCDate::MIN);
-    let date_copy = date_from_system_time;
-    assert_eq!(date_copy, date_from_system_time);
-    assert_eq!(UTCDate::MIN, date_copy.min(UTCDate::MIN));
-    assert_eq!(UTCDate::MAX, date_copy.max(UTCDate::MAX));
-    // test limits
-    assert_eq!(UTCDate::from_day(UTCDay::MAX), UTCDate::MAX);
-    assert_eq!(UTCDate::from_day(UTCDay::ZERO), UTCDate::MIN);
-
+    #[cfg(feature = "std")]
+    {
+        let date_from_system_time = UTCDate::try_from_system_time().unwrap();
+        assert!(date_from_system_time >= UTCDate::MIN);
+        assert!(date_from_system_time <= UTCDate::MAX);
+        // test debug & display
+        println!("{:?}:{date_from_system_time}", date_from_system_time);
+        // test default, clone & copy, ord
+        assert_eq!(UTCDate::default().clone(), UTCDate::MIN);
+        let date_copy = date_from_system_time;
+        assert_eq!(date_copy, date_from_system_time);
+        assert_eq!(UTCDate::MIN, date_copy.min(UTCDate::MIN));
+        assert_eq!(UTCDate::MAX, date_copy.max(UTCDate::MAX));
+        // test limits
+        assert_eq!(UTCDate::from_day(UTCDay::MAX), UTCDate::MAX);
+        assert_eq!(UTCDate::from_day(UTCDay::ZERO), UTCDate::MIN);
+    }
     Ok(())
 }
 
