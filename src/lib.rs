@@ -291,6 +291,7 @@ impl UTCDatetime {
     /// UTCDatetime can physically store dates up to `December 31, 1_717_986_918_399, T23:59:59.999999999Z`
     pub const MAX: UTCDatetime = Self {
         date: UTCDate::MAX,
+        // SAFETY: nanos is within NANOS_PER_DAY
         tod: unsafe { UTCTimeOfDay::from_nanos_unchecked(25215999999999) },
     };
 

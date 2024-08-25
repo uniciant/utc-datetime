@@ -126,6 +126,7 @@ impl UTCTimestamp {
     pub const fn as_tod(&self) -> UTCTimeOfDay {
         let ns = ((self.0.as_secs() % SECONDS_PER_DAY) * NANOS_PER_SECOND)
             + (self.0.subsec_nanos() as u64);
+        // SAFETY: nanos is within NANOS_PER_DAY
         unsafe { UTCTimeOfDay::from_nanos_unchecked(ns) }
     }
 
@@ -1094,6 +1095,7 @@ impl UTCTimeOfDay {
 
     /// Try to create UTC time of day from nanoseconds
     pub fn try_from_nanos(nanos: u64) -> Result<Self, UTCTimeOfDayError> {
+        // SAFETY: we immediately check that nanos was within NANOS_PER_DAY (tod does not exceed UTCTimeOfDay::MAX)
         let tod = unsafe { Self::from_nanos_unchecked(nanos) };
         if tod > Self::MAX {
             return Err(UTCTimeOfDayError::ExcessNanos(nanos));
@@ -1103,6 +1105,7 @@ impl UTCTimeOfDay {
 
     /// Try to create UTC time of day from microseconds
     pub fn try_from_micros(micros: u64) -> Result<Self, UTCTimeOfDayError> {
+        // SAFETY: we immediately check that micros was within MICROS_PER_DAY (tod does not exceed UTCTimeOfDay::MAX)
         let tod = unsafe { Self::from_micros_unchecked(micros) };
         if tod > Self::MAX {
             return Err(UTCTimeOfDayError::ExcessMicros(micros));
@@ -1112,6 +1115,7 @@ impl UTCTimeOfDay {
 
     /// Try to create UTC time of day from milliseconds
     pub fn try_from_millis(millis: u32) -> Result<Self, UTCTimeOfDayError> {
+        // SAFETY: we immediately check that millis was within MILLIS_PER_DAY (tod does not exceed UTCTimeOfDay::MAX)
         let tod = unsafe { Self::from_millis_unchecked(millis) };
         if tod > Self::MAX {
             return Err(UTCTimeOfDayError::ExcessMillis(millis));
@@ -1121,6 +1125,7 @@ impl UTCTimeOfDay {
 
     /// Try to create UTC time of day from seconds
     pub fn try_from_secs(secs: u32) -> Result<Self, UTCTimeOfDayError> {
+        // SAFETY: we immediately check that secs was within SECONDS_PER_DAY (tod does not exceed UTCTimeOfDay::MAX)
         let tod = unsafe { Self::from_secs_unchecked(secs) };
         if tod > Self::MAX {
             return Err(UTCTimeOfDayError::ExcessSeconds(secs));

@@ -137,9 +137,9 @@ impl UTCDate {
         if month == 0 || month > 12 {
             return Err(UTCDateError::MonthOutOfRange(month));
         }
-        // force create
+        // SAFETY: we have checked year and month are within range
         let date = unsafe { Self::from_components_unchecked(year, month, day) };
-        // then check
+        // Then check days
         if date.day == 0 || date.day > date.days_in_month() {
             return Err(UTCDateError::DayOutOfRange(date));
         }
@@ -186,6 +186,7 @@ impl UTCDate {
         let doy = ((153 * (if m > 2 { m - 3 } else { m + 9 }) + 2) / 5) + d - 1;
         let doe = (yoe * 365) + (yoe / 4) - (yoe / 100) + doy as u32;
         let days = (era as u64 * 146097) + doe as u64 - 719468;
+        // SAFETY: days is not exceeding UTCDay::MAX
         unsafe { UTCDay::from_u64_unchecked(days) }
     }
 
