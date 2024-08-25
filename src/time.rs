@@ -994,10 +994,14 @@ impl From<UTCTimestamp> for UTCDay {
 /// // Parse a UTC Time of Day from an ISO 8601 time string `(Thh:mm:ssZ)`
 /// let utc_tod = UTCTimeOfDay::try_from_iso_tod("T10:18:08.903Z").unwrap();
 /// // Get a time of day string formatted according to ISO 8601 `(Thh:mm:ssZ)`
-/// // Not available for #![no_std]
-/// let precision = Some(6);
-/// let iso_tod = utc_tod.as_iso_tod(precision);
+/// const PRECISION_MICROS: usize = 6;
+/// let iso_tod = utc_tod.as_iso_tod(PRECISION_MICROS);
 /// assert_eq!(iso_tod, "T10:18:08.903000Z");
+/// // Write ISO 8601 time of day str to a static buffer
+/// let mut buf = [0; UTCTimeOfDay::iso_tod_len(PRECISION_MICROS)];
+/// let _bytes_written = utc_tod.write_iso_tod(&mut buf, PRECISION_MICROS).unwrap();
+/// let iso_tod_str = core::str::from_utf8(&buf).unwrap();
+/// assert_eq!(iso_tod_str, "T10:18:08.903000Z");
 /// ```
 ///
 /// ## Safety

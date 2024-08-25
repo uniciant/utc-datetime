@@ -103,9 +103,14 @@
 //!     // Parse a UTC Time of Day from an ISO 8601 time string `(Thh:mm:ssZ)`
 //!     let utc_tod = UTCTimeOfDay::try_from_iso_tod("T10:18:08.903Z").unwrap();
 //!     // Get a time of day string formatted according to ISO 8601 `(Thh:mm:ssZ)`
-//!     let precision = Some(6);
-//!     let iso_tod = utc_tod.as_iso_tod(precision);
+//!     const PRECISION_MICROS: usize = 6;
+//!     let iso_tod = utc_tod.as_iso_tod(PRECISION_MICROS);
 //!     assert_eq!(iso_tod, "T10:18:08.903000Z");
+//!     // Write ISO 8601 time of day str to a static buffer
+//!     let mut buf = [0; UTCTimeOfDay::iso_tod_len(PRECISION_MICROS)];
+//!     let _bytes_written = utc_tod.write_iso_tod(&mut buf, PRECISION_MICROS).unwrap();
+//!     let iso_tod_str = core::str::from_utf8(&buf).unwrap();
+//!     assert_eq!(iso_tod_str, "T10:18:08.903000Z");
 //!
 //!     // UTC Date directly from components
 //!     let utc_date = UTCDate::try_from_components(2023, 6, 15).unwrap(); // OR
@@ -125,6 +130,11 @@
 //!     // Get date string formatted according to ISO 8601 `(YYYY-MM-DD)`
 //!     let iso_date = utc_date.as_iso_date();
 //!     assert_eq!(iso_date, "2023-06-15");
+//!     // Write ISO 8601 date str to a static buffer
+//!     let mut buf = [0; UTCDate::ISO_DATE_LEN];
+//!     let _bytes_written = utc_date.write_iso_date(&mut buf).unwrap();
+//!     let iso_date_str = core::str::from_utf8(&buf).unwrap();
+//!     assert_eq!(iso_date_str, "2023-06-15");
 //!
 //!     // UTC Datetime from date and time-of-day components
 //!     let utc_datetime = UTCDatetime::from_components(utc_date, utc_tod);
@@ -134,9 +144,14 @@
 //!     // Parse a UTC Datetime from an ISO 8601 datetime string `(YYYY-MM-DDThh:mm:ssZ)`
 //!     let utc_datetime = UTCDatetime::try_from_iso_datetime("2023-06-15T10:18:08.903Z").unwrap();
 //!     // Get UTC datetime string formatted according to ISO 8601 `(YYYY-MM-DDThh:mm:ssZ)`
-//!     let precision = None;
-//!     let iso_datetime = utc_datetime.as_iso_datetime(precision);
+//!     const PRECISION_SECONDS: usize = 0;
+//!     let iso_datetime = utc_datetime.as_iso_datetime(PRECISION_SECONDS);
 //!     assert_eq!(iso_datetime, "2023-06-15T10:18:08Z");
+//!     // Write ISO 8601 datetime str to a static buffer
+//!     let mut buf = [0; UTCDatetime::iso_datetime_len(PRECISION_SECONDS)];
+//!     let _bytes_written = utc_datetime.write_iso_datetime(&mut buf, PRECISION_SECONDS).unwrap();
+//!     let iso_datetime_str = core::str::from_utf8(&buf).unwrap();
+//!     assert_eq!(iso_datetime_str, "2023-06-15T10:18:08Z");
 //!
 //!     {
 //!         // `UTCTransformations` can be used to create shortcuts to the desired type!
@@ -255,10 +270,14 @@ use std::error::Error;
 /// // Parse a UTC Datetime from an ISO 8601 datetime string `(YYYY-MM-DDThh:mm:ssZ)`
 /// let utc_datetime = UTCDatetime::try_from_iso_datetime("2023-06-15T10:18:08.903Z").unwrap();
 /// // Get UTC datetime string formatted according to ISO 8601 `(YYYY-MM-DDThh:mm:ssZ)`
-/// // Not available for #![no_std]
-/// let precision = None;
-/// let iso_datetime = utc_datetime.as_iso_datetime(precision);
+/// const PRECISION_SECONDS: usize = 0;
+/// let iso_datetime = utc_datetime.as_iso_datetime(PRECISION_SECONDS);
 /// assert_eq!(iso_datetime, "2023-06-15T10:18:08Z");
+/// // Write ISO 8601 datetime str to a static buffer
+/// let mut buf = [0; UTCDatetime::iso_datetime_len(PRECISION_SECONDS)];
+/// let _bytes_written = utc_datetime.write_iso_datetime(&mut buf, PRECISION_SECONDS).unwrap();
+/// let iso_datetime_str = core::str::from_utf8(&buf).unwrap();
+/// assert_eq!(iso_datetime_str, "2023-06-15T10:18:08Z");
 /// ```
 ///
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
