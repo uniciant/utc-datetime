@@ -997,7 +997,7 @@ impl From<UTCTimestamp> for UTCDay {
 /// const PRECISION_MICROS: usize = 6;
 /// let iso_tod = utc_tod.as_iso_tod(PRECISION_MICROS);
 /// assert_eq!(iso_tod, "T10:18:08.903000Z");
-/// // Write ISO 8601 time of day str to a static buffer
+/// // Write ISO 8601 time of day str to a stack buffer
 /// let mut buf = [0; UTCTimeOfDay::iso_tod_len(PRECISION_MICROS)];
 /// let _bytes_written = utc_tod.write_iso_tod(&mut buf, PRECISION_MICROS).unwrap();
 /// let iso_tod_str = core::str::from_utf8(&buf).unwrap();

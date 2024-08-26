@@ -105,7 +105,7 @@ See [docs.rs](https://docs.rs/utc-dt) for the API reference.
     const PRECISION_MICROS: usize = 6;
     let iso_tod = utc_tod.as_iso_tod(PRECISION_MICROS);
     assert_eq!(iso_tod, "T10:18:08.903000Z");
-    // Write ISO 8601 time of day str to a static buffer
+    // Write ISO 8601 time of day str to a stack buffer
     let mut buf = [0; UTCTimeOfDay::iso_tod_len(PRECISION_MICROS)];
     let _bytes_written = utc_tod.write_iso_tod(&mut buf, PRECISION_MICROS).unwrap();
     let iso_tod_str = core::str::from_utf8(&buf).unwrap();
@@ -129,7 +129,7 @@ See [docs.rs](https://docs.rs/utc-dt) for the API reference.
     // Get date string formatted according to ISO 8601 `(YYYY-MM-DD)`
     let iso_date = utc_date.as_iso_date();
     assert_eq!(iso_date, "2023-06-15");
-    // Write ISO 8601 date str to a static buffer
+    // Write ISO 8601 date str to a stack buffer
     let mut buf = [0; UTCDate::ISO_DATE_LEN];
     let _bytes_written = utc_date.write_iso_date(&mut buf).unwrap();
     let iso_date_str = core::str::from_utf8(&buf).unwrap();
@@ -146,7 +146,7 @@ See [docs.rs](https://docs.rs/utc-dt) for the API reference.
     const PRECISION_SECONDS: usize = 0;
     let iso_datetime = utc_datetime.as_iso_datetime(PRECISION_SECONDS);
     assert_eq!(iso_datetime, "2023-06-15T10:18:08Z");
-    // Write ISO 8601 datetime str to a static buffer
+    // Write ISO 8601 datetime str to a stack buffer
     let mut buf = [0; UTCDatetime::iso_datetime_len(PRECISION_SECONDS)];
     let _bytes_written = utc_datetime.write_iso_datetime(&mut buf, PRECISION_SECONDS).unwrap();
     let iso_datetime_str = core::str::from_utf8(&buf).unwrap();

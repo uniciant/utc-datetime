@@ -51,7 +51,7 @@ use std::error::Error;
 /// // Not available for #![no_std]
 /// let iso_date = utc_date.as_iso_date();
 /// assert_eq!(iso_date, "2023-06-15");
-/// // Write ISO 8601 date str to a static buffer
+/// // Write ISO 8601 date str to a stack buffer
 /// let mut buf = [0; UTCDate::ISO_DATE_LEN];
 /// let _bytes_written = utc_date.write_iso_date(&mut buf).unwrap();
 /// let iso_date_str = core::str::from_utf8(&buf).unwrap();
