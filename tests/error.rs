@@ -1,15 +1,23 @@
-use std::{error::Error, fmt::Display};
-
+use core::fmt::Display;
 use utc_dt::date::{UTCDate, UTCDateError};
 use utc_dt::time::{UTCDay, UTCTimeOfDayError};
 use utc_dt::{UTCDatetimeError, UTCError};
 
-fn check_errors<T: Error + Display>(errors: &[T]) {
+#[cfg(feature = "std")]
+fn check_errors<T: std::error::Error + Display>(errors: &[T]) {
     for error in errors {
         print!("Error Display test: {error}");
         if let Some(source) = error.source() {
             print!(", caused by {source}");
         }
+        print!("\n");
+    }
+}
+
+#[cfg(not(feature = "std"))]
+fn check_errors<T: Display>(errors: &[T]) {
+    for error in errors {
+        print!("Error Display test: {error}");
         print!("\n");
     }
 }
@@ -38,16 +46,16 @@ fn test_errors() {
     let utc_day_error = [UTCDay::try_from_u64(213_503_982_334_602).unwrap_err()];
     check_errors(&utc_day_error);
     let utc_datetime_errors = [
-        UTCDatetimeError::UTCDate(utc_date_errors[0].clone()),
-        UTCDatetimeError::UTCTimeOfDay(utc_tod_errors[0].clone()),
+        utc_date_errors[0].clone().into(),
+        utc_tod_errors[0].clone().into(),
         UTCDatetimeError::InsufficientStrLen(10, 20),
     ];
     check_errors(&utc_datetime_errors);
-    let utc_errors = [
-        UTCError::UTCDate(utc_date_errors[1].clone()),
-        UTCError::UTCTimeOfDay(utc_tod_errors[1].clone()),
-        UTCError::UTCDay(utc_day_error[0].clone()),
-        UTCError::UTCDatetime(utc_datetime_errors[0].clone()),
+    let utc_errors: [UTCError; 4] = [
+        utc_date_errors[1].clone().into(),
+        utc_tod_errors[1].clone().into(),
+        utc_day_error[0].clone().into(),
+        utc_datetime_errors[0].clone().into(),
     ];
     check_errors(&utc_errors.clone());
 }
