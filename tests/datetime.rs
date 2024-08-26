@@ -141,6 +141,7 @@ fn test_datetime_iso_conversions() -> Result<(), UTCError> {
     // test invalid iso dates
     assert!(UTCDatetime::try_from_iso_datetime("197a-01-01T00:00:00Z").is_err());
     assert!(UTCDatetime::try_from_iso_datetime("1970-01-01T00:a0:00Z").is_err());
+    assert!(UTCDatetime::try_from_iso_datetime("1970-01-01T00:a0").is_err());
 
     // test display & debug
     #[cfg(feature = "std")]

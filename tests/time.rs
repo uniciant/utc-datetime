@@ -311,25 +311,36 @@ fn test_utc_tod() -> Result<(), UTCError> {
     assert!(UTCTimeOfDay::try_from_hhmmss(u8::MAX, u8::MAX, u8::MAX, u32::MAX).is_err());
     // test iso conversions
     #[cfg(feature = "alloc")]
-    {
-        let iso_from_tod = tod_from_timestamp.as_iso_tod(9);
-        let tod_from_iso = UTCTimeOfDay::try_from_iso_tod(&iso_from_tod)?;
-        assert_eq!(tod_from_iso, tod_from_timestamp);
-        assert_eq!(
-            UTCTimeOfDay::try_from_iso_tod("T00:00:00Z")?,
-            UTCTimeOfDay::ZERO
-        );
-        assert_eq!(
-            UTCTimeOfDay::try_from_iso_tod("T23:59:59.999999999Z")?,
-            UTCTimeOfDay::MAX
-        );
-        assert!(UTCTimeOfDay::try_from_iso_tod("Taa:59:59.999999999Z").is_err()); // invalid hour
-        assert!(UTCTimeOfDay::try_from_iso_tod("T23:aa:59.999999999Z").is_err()); // invalid mins
-        assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:aa.999999999Z").is_err()); // invalid secs
-        assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.a99999999Z").is_err()); // invalid subsec
-        assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.9999999990Z").is_err());
-        // invalid precision
-    }
+    let iso_from_tod = tod_from_timestamp.as_iso_tod(9);
+    #[cfg(not(feature = "alloc"))]
+    let mut buf = [0; UTCTimeOfDay::iso_tod_len(9)];
+    #[cfg(not(feature = "alloc"))]
+    let iso_from_tod = {
+        let _ = tod_from_timestamp.write_iso_tod(&mut buf, 9)?;
+        core::str::from_utf8(&buf).unwrap()
+    };
+    let tod_from_iso = UTCTimeOfDay::try_from_iso_tod(&iso_from_tod)?;
+    assert_eq!(tod_from_iso, tod_from_timestamp);
+    assert_eq!(
+        UTCTimeOfDay::try_from_iso_tod("T00:00:00Z")?,
+        UTCTimeOfDay::ZERO
+    );
+    assert_eq!(
+        UTCTimeOfDay::try_from_iso_tod("T00:00:00.Z")?,
+        UTCTimeOfDay::ZERO
+    );
+    assert_eq!(
+        UTCTimeOfDay::try_from_iso_tod("T23:59:59.999999999Z")?,
+        UTCTimeOfDay::MAX
+    );
+    assert!(UTCTimeOfDay::try_from_iso_tod("Taa:59:59.999999999Z").is_err()); // invalid hour
+    assert!(UTCTimeOfDay::try_from_iso_tod("T23:aa:59.999999999Z").is_err()); // invalid mins
+    assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:aa.999999999Z").is_err()); // invalid secs
+    assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.a99999999Z").is_err()); // invalid subsec
+    assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.9999999990Z").is_err());
+    assert!(UTCTimeOfDay::try_from_iso_tod("T23::59.9999999990Z").is_err());
+    assert!(UTCTimeOfDay::try_from_iso_tod("T23:59.9999999990Z").is_err());
+    assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59").is_err());
     // test no-alloc iso conversions
     let mut buf = [0; UTCTimeOfDay::iso_tod_len(9)];
     for precision in 0..13 {

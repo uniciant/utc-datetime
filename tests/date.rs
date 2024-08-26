@@ -78,6 +78,7 @@ fn test_date_iso_conversions() -> Result<(), UTCError> {
         (2023, 9, 0, false, "202a-09-00"),   // invalid date, year not integer
         (2023, 9, 0, false, "2023-0a-00"),   // invalid date, month not integer
         (2023, 9, 0, false, "2023-09-0a"),   // invalid date, day not integer
+        (2023, 9, 1, false, "2023-09-1"),    // invalid date, incorrect formatting
     ];
     let mut buf = [0; UTCDate::ISO_DATE_LEN];
 
