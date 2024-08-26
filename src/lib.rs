@@ -2,6 +2,7 @@
 //!
 //! [![crates.io](https://img.shields.io/crates/v/utc-dt?style=flat-square&logo=rust)](https://crates.io/crates/utc-dt)
 //! [![license](https://img.shields.io/badge/license-Apache--2.0_OR_MIT-blue?style=flat-square)](#license)
+//! [![docs](https://img.shields.io/docsrs/utc-dt/latest)](https://docs.rs/utc-dt)
 //! [![build status](https://img.shields.io/github/actions/workflow/status/uniciant/utc-datetime/rust.yml?branch=main&style=flat-square&logo=github)](https://github.com/uniciant/utc-datetime/actions)
 //! [![codecov](https://codecov.io/gh/uniciant/utc-datetime/branch/main/graph/badge.svg?token=XTOHZ187TY)](https://codecov.io/gh/uniciant/utc-datetime)
 //!
