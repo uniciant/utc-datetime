@@ -450,7 +450,7 @@ impl From<Duration> for UTCDatetime {
 }
 
 /// Error type for UTCDatetime methods
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UTCDatetimeError {
     /// Error within UTC Date
     UTCDate(UTCDateError),
@@ -466,7 +466,7 @@ impl Display for UTCDatetimeError {
             Self::UTCDate(e) => e.fmt(f),
             Self::UTCTimeOfDay(e) => e.fmt(f),
             Self::InsufficientStrLen(l, m) => {
-                write!(f, "Insufficient ISO datetime str len ({l}), {m} required")
+                write!(f, "insufficient ISO datetime str len ({l}), {m} required")
             }
         }
     }
@@ -496,7 +496,7 @@ impl From<UTCTimeOfDayError> for UTCDatetimeError {
 }
 
 /// UTC Datetime crate level error type
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UTCError {
     /// Error within UTC Date
     UTCDate(UTCDateError),

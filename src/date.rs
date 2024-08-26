@@ -365,7 +365,7 @@ impl From<UTCDay> for UTCDate {
 }
 
 /// Error type for UTCDate methods
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UTCDateError {
     /// Error raised parsing int to string
     ParseErr(ParseIntError),
@@ -385,11 +385,11 @@ impl Display for UTCDateError {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::ParseErr(e) => e.fmt(f),
-            Self::YearOutOfRange(y) => write!(f, "Year ({y}) out of range!"),
-            Self::MonthOutOfRange(m) => write!(f, "Month ({m}) out of range!"),
-            Self::DayOutOfRange(d) => write!(f, "Day ({d}) out of range!"),
-            Self::DateOutOfRange(date) => write!(f, "Date ({date}) out of range!"),
-            Self::InvalidStrLen(l) => write!(f, "Invalid ISO date str length ({l}), 10 required"),
+            Self::YearOutOfRange(y) => write!(f, "year ({y}) out of range!"),
+            Self::MonthOutOfRange(m) => write!(f, "month ({m}) out of range!"),
+            Self::DayOutOfRange(d) => write!(f, "day ({d}) out of range!"),
+            Self::DateOutOfRange(date) => write!(f, "date ({date}) out of range!"),
+            Self::InvalidStrLen(l) => write!(f, "invalid ISO date str length ({l}), 10 required"),
         }
     }
 }

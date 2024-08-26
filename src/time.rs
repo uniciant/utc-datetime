@@ -787,7 +787,7 @@ impl UTCDay {
 }
 
 /// Error type for UTCDay out of range
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UTCDayErrOutOfRange(u64);
 
 impl Display for UTCDayErrOutOfRange {
@@ -1305,7 +1305,7 @@ impl UTCTimeOfDay {
 }
 
 /// Error type for UTCTimeOfDay methods
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UTCTimeOfDayError {
     /// Error raised parsing int to string
     ParseErr(ParseIntError),
@@ -1328,12 +1328,12 @@ impl Display for UTCTimeOfDayError {
         match self {
             Self::ParseErr(e) => e.fmt(f),
             Self::ExcessPrecision(p) => write!(f, "ISO precision ({p}) exceeds maximum of 9"),
-            Self::ExcessNanos(n) => write!(f, "Nanoseconds ({n}) not within a day"),
-            Self::ExcessMicros(u) => write!(f, "Microseconds ({u}) not within a day"),
-            Self::ExcessMillis(m) => write!(f, "Milliseconds ({m}) not within a day"),
-            Self::ExcessSeconds(s) => write!(f, "Seconds ({s}) not within a day"),
+            Self::ExcessNanos(n) => write!(f, "nanoseconds ({n}) not within a day"),
+            Self::ExcessMicros(u) => write!(f, "microseconds ({u}) not within a day"),
+            Self::ExcessMillis(m) => write!(f, "milliseconds ({m}) not within a day"),
+            Self::ExcessSeconds(s) => write!(f, "seconds ({s}) not within a day"),
             Self::InsufficientStrLen(l, m) => {
-                write!(f, "Insufficient ISO time str len ({l}), {m} required")
+                write!(f, "insufficient ISO time str len ({l}), {m} required")
             }
         }
     }
