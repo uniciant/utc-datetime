@@ -1,15 +1,14 @@
 use core::time::Duration;
 use std::collections::HashSet;
 
-use anyhow::Result;
-
 use utc_dt::{
     constants::{MICROS_PER_DAY, MILLIS_PER_DAY, NANOS_PER_DAY, NANOS_PER_SECOND, SECONDS_PER_DAY},
     time::{UTCDay, UTCTimeOfDay, UTCTimestamp, UTCTransformations},
+    UTCError,
 };
 
 #[test]
-fn test_utc_timestamp() -> Result<()> {
+fn test_utc_timestamp() -> Result<(), UTCError> {
     let test_cases = [
         (
             UTCTimestamp::from_nanos(0),
@@ -96,7 +95,7 @@ fn test_utc_timestamp() -> Result<()> {
 
     // test from system time
     #[cfg(feature = "std")]
-    let timestamp = UTCTimestamp::try_from_system_time()?;
+    let timestamp = UTCTimestamp::try_from_system_time().unwrap();
     #[cfg(not(feature = "std"))]
     let timestamp = UTCTimestamp::from_millis(1686824288903);
     assert!(timestamp <= UTCTimestamp::MAX);
@@ -198,10 +197,10 @@ fn test_utc_timestamp() -> Result<()> {
 }
 
 #[test]
-fn test_utc_day() -> Result<()> {
+fn test_utc_day() -> Result<(), UTCError> {
     // test from system time
     #[cfg(feature = "std")]
-    let utc_day = UTCDay::try_from_system_time()?;
+    let utc_day = UTCDay::try_from_system_time().unwrap();
     #[cfg(not(feature = "std"))]
     let utc_day = UTCDay::from_millis(1686824288903);
     assert!(utc_day <= UTCDay::MAX);
@@ -290,10 +289,10 @@ fn test_utc_day() -> Result<()> {
 }
 
 #[test]
-fn test_utc_tod() -> Result<()> {
+fn test_utc_tod() -> Result<(), UTCError> {
     // test from system time
     #[cfg(feature = "std")]
-    let timestamp = UTCTimestamp::try_from_system_time()?;
+    let timestamp = UTCTimestamp::try_from_system_time().unwrap();
     #[cfg(not(feature = "std"))]
     let timestamp = UTCTimestamp::from_millis(1686824288903);
     let tod_from_timestamp = UTCTimeOfDay::from_timestamp(timestamp);
@@ -311,25 +310,53 @@ fn test_utc_tod() -> Result<()> {
     assert!(UTCTimeOfDay::try_from_hhmmss(23, 59, 59, (NANOS_PER_SECOND - 1) as u32).is_ok());
     assert!(UTCTimeOfDay::try_from_hhmmss(u8::MAX, u8::MAX, u8::MAX, u32::MAX).is_err());
     // test iso conversions
-    #[cfg(feature = "std")]
-    {
-        let iso_from_tod = tod_from_timestamp.as_iso_tod(Some(9));
-        let tod_from_iso = UTCTimeOfDay::try_from_iso_tod(&iso_from_tod)?;
-        assert_eq!(tod_from_iso, tod_from_timestamp);
-        assert_eq!(
-            UTCTimeOfDay::try_from_iso_tod("T00:00:00Z")?,
-            UTCTimeOfDay::ZERO
-        );
-        assert_eq!(
-            UTCTimeOfDay::try_from_iso_tod("T23:59:59.999999999Z")?,
-            UTCTimeOfDay::MAX
-        );
-        assert!(UTCTimeOfDay::try_from_iso_tod("Taa:59:59.999999999Z").is_err()); // invalid hour
-        assert!(UTCTimeOfDay::try_from_iso_tod("T23:aa:59.999999999Z").is_err()); // invalid mins
-        assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:aa.999999999Z").is_err()); // invalid secs
-        assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.a99999999Z").is_err()); // invalid subsec
-        assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.9999999990Z").is_err());
-        // invalid precision
+    #[cfg(feature = "alloc")]
+    let iso_from_tod = tod_from_timestamp.as_iso_tod(9);
+    #[cfg(not(feature = "alloc"))]
+    let mut buf = [0; UTCTimeOfDay::iso_tod_len(9)];
+    #[cfg(not(feature = "alloc"))]
+    let iso_from_tod = {
+        let _ = tod_from_timestamp.write_iso_tod(&mut buf, 9)?;
+        core::str::from_utf8(&buf).unwrap()
+    };
+    let tod_from_iso = UTCTimeOfDay::try_from_iso_tod(&iso_from_tod)?;
+    assert_eq!(tod_from_iso, tod_from_timestamp);
+    assert_eq!(
+        UTCTimeOfDay::try_from_iso_tod("T00:00:00Z")?,
+        UTCTimeOfDay::ZERO
+    );
+    assert_eq!(
+        UTCTimeOfDay::try_from_iso_tod("T00:00:00.Z")?,
+        UTCTimeOfDay::ZERO
+    );
+    assert_eq!(
+        UTCTimeOfDay::try_from_iso_tod("T23:59:59.999999999Z")?,
+        UTCTimeOfDay::MAX
+    );
+    assert!(UTCTimeOfDay::try_from_iso_tod("Taa:59:59.999999999Z").is_err()); // invalid hour
+    assert!(UTCTimeOfDay::try_from_iso_tod("T23:aa:59.999999999Z").is_err()); // invalid mins
+    assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:aa.999999999Z").is_err()); // invalid secs
+    assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.a99999999Z").is_err()); // invalid subsec
+    assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59.9999999990Z").is_err());
+    assert!(UTCTimeOfDay::try_from_iso_tod("T23::59.9999999990Z").is_err());
+    assert!(UTCTimeOfDay::try_from_iso_tod("T23:59.9999999990Z").is_err());
+    assert!(UTCTimeOfDay::try_from_iso_tod("T23:59:59").is_err());
+    // test no-alloc iso conversions
+    let mut buf = [0; UTCTimeOfDay::iso_tod_len(9)];
+    for precision in 0..13 {
+        let written = tod_from_timestamp.write_iso_tod(&mut buf, precision)?;
+        let iso_raw_str = core::str::from_utf8(&buf[..written]).unwrap();
+        assert_eq!(iso_raw_str.len(), UTCTimeOfDay::iso_tod_len(precision));
+        #[cfg(feature = "alloc")]
+        assert_eq!(tod_from_timestamp.as_iso_tod(precision), iso_raw_str);
+        // test maybe-invalid buf len
+        let mut buf = [0; 5];
+        let result = tod_from_timestamp.write_iso_tod(&mut buf, precision);
+        if buf.len() < UTCTimeOfDay::iso_tod_len(precision) {
+            assert!(result.is_err())
+        } else {
+            assert!(result.is_ok())
+        }
     }
 
     // test unit conversions
@@ -366,4 +393,20 @@ fn test_utc_tod() -> Result<()> {
         hash_set.get(&tod_from_timestamp).unwrap()
     );
     Ok(())
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn test_time_serde() {
+    let timestamp = UTCTimestamp::from_day(UTCDay::try_from_u64(19959).unwrap());
+    let v = serde_json::to_value(&timestamp).unwrap();
+    assert_eq!(timestamp, serde_json::from_value(v).unwrap());
+
+    let day = UTCDay::try_from_u64(19959).unwrap();
+    let v = serde_json::to_value(&day).unwrap();
+    assert_eq!(day, serde_json::from_value(v).unwrap());
+
+    let time_of_day = UTCTimeOfDay::try_from_hhmmss(17, 50, 23, 0).unwrap();
+    let v = serde_json::to_value(&time_of_day).unwrap();
+    assert_eq!(time_of_day, serde_json::from_value(v).unwrap());
 }

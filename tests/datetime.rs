@@ -1,13 +1,11 @@
-use anyhow::Result;
-
 use utc_dt::{
     date::UTCDate,
     time::{UTCDay, UTCTimeOfDay, UTCTimestamp, UTCTransformations},
-    UTCDatetime,
+    UTCDatetime, UTCError,
 };
 
 #[test]
-fn test_datetime_from_raw_components() -> Result<()> {
+fn test_datetime_from_raw_components() -> Result<(), UTCError> {
     let test_cases = [
         (1970, 1, 1, 0, 0, 0, 0, 0, UTCDay::ZERO), // thu, 00:00:00.000
         (
@@ -35,7 +33,7 @@ fn test_datetime_from_raw_components() -> Result<()> {
 
     // test display & debug
     #[cfg(feature = "std")]
-    let datetime = UTCDatetime::try_from_system_time()?;
+    let datetime = UTCDatetime::try_from_system_time().unwrap();
     #[cfg(not(feature = "std"))]
     let datetime = UTCDatetime::from_millis(1686824288903);
     // test to/as components
@@ -43,7 +41,7 @@ fn test_datetime_from_raw_components() -> Result<()> {
     assert_eq!((date, tod), datetime.to_components());
     // test from timestamp
     #[cfg(feature = "std")]
-    let timestamp = UTCTimestamp::try_from_system_time()?;
+    let timestamp = UTCTimestamp::try_from_system_time().unwrap();
     #[cfg(not(feature = "std"))]
     let timestamp = UTCTimestamp::from_millis(1686824288903);
     let datetime_from_timestamp = UTCDatetime::from_timestamp(timestamp);
@@ -95,24 +93,23 @@ fn test_datetime_from_raw_components() -> Result<()> {
     Ok(())
 }
 
-#[cfg(feature = "std")]
 #[test]
-fn test_datetime_iso_conversions() -> Result<()> {
+fn test_datetime_iso_conversions() -> Result<(), UTCError> {
     let test_cases = [
-        (1970, 1, 1, 0, None, "1970-01-01T00:00:00Z"), // thu, 00:00:00
-        (1970, 1, 1, 0, Some(0), "1970-01-01T00:00:00.Z"), // thu, 00:00:00.
-        (1970, 1, 1, 0, Some(3), "1970-01-01T00:00:00.000Z"), // thu, 00:00:00.000
-        (1970, 1, 1, 0, Some(9), "1970-01-01T00:00:00.000000000Z"), // thu, 00:00:00.000000000
-        (1970, 1, 1, 0, Some(11), "1970-01-01T00:00:00.000000000Z"), // thu, 00:00:00.000000000
+        (1970, 1, 1, 0, 0, "1970-01-01T00:00:00Z"), // thu, 00:00:00
+        (1970, 1, 1, 0, 3, "1970-01-01T00:00:00.000Z"), // thu, 00:00:00.000
+        (1970, 1, 1, 0, 9, "1970-01-01T00:00:00.000000000Z"), // thu, 00:00:00.000000000
+        (1970, 1, 1, 0, 11, "1970-01-01T00:00:00.000000000Z"), // thu, 00:00:00.000000000
         (
             2023,
             6,
             14,
             33_609_648_000_000,
-            Some(3),
+            3,
             "2023-06-14T09:20:09.648Z",
         ), // wed, 09:20:09.648
     ];
+    let mut buf = [0; UTCDatetime::iso_datetime_len(9)];
 
     // run iso conversion test cases
     for (year, month, day, tod_ns, precision, iso_datetime) in test_cases {
@@ -120,20 +117,45 @@ fn test_datetime_iso_conversions() -> Result<()> {
         let tod = UTCTimeOfDay::try_from_nanos(tod_ns)?;
         let datetime_from_components = UTCDatetime::from_components(date, tod);
         let datetime_from_iso = UTCDatetime::try_from_iso_datetime(iso_datetime)?;
+        #[cfg(feature = "alloc")]
         assert_eq!(
             datetime_from_components.as_iso_datetime(precision),
             iso_datetime
         );
+        let written = datetime_from_components.write_iso_datetime(&mut buf, precision)?;
+        let iso_raw_str = core::str::from_utf8(&buf[..written]).unwrap();
+        assert_eq!(iso_raw_str.len(), UTCDatetime::iso_datetime_len(precision));
+        assert_eq!(iso_datetime.as_bytes(), &buf[..written]);
+        assert_eq!(iso_datetime, iso_raw_str);
         assert_eq!(datetime_from_iso, datetime_from_components);
+        // test maybe-invalid buf len
+        let mut buf = [0; 3];
+        let result = datetime_from_components.write_iso_datetime(&mut buf, precision);
+        if buf.len() < UTCDatetime::iso_datetime_len(precision) {
+            assert!(result.is_err())
+        } else {
+            assert!(result.is_ok())
+        }
     }
 
     // test invalid iso dates
     assert!(UTCDatetime::try_from_iso_datetime("197a-01-01T00:00:00Z").is_err());
     assert!(UTCDatetime::try_from_iso_datetime("1970-01-01T00:a0:00Z").is_err());
+    assert!(UTCDatetime::try_from_iso_datetime("1970-01-01T00:a0").is_err());
 
     // test display & debug
-    let datetime = UTCDatetime::try_from_system_time()?;
-    println!("{:?}:{datetime}", datetime);
-
+    #[cfg(feature = "std")]
+    {
+        let datetime = UTCDatetime::try_from_system_time().unwrap();
+        println!("{:?}:{datetime}", datetime);
+    }
     Ok(())
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn test_datetime_serde() {
+    let datetime = UTCDatetime::from_secs(1724493234);
+    let v = serde_json::to_value(&datetime).unwrap();
+    assert_eq!(datetime, serde_json::from_value(v).unwrap());
 }

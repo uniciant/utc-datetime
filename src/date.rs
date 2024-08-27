@@ -4,14 +4,20 @@
 //! proleptic Gregorian Calendar (the *civil* calendar),
 //! to create UTC dates.
 
-use core::{
-    fmt::{Display, Formatter},
-    time::Duration,
-};
-
-use anyhow::{bail, Result};
-
 use crate::time::{UTCDay, UTCTimestamp, UTCTransformations};
+use crate::util::StrWriter;
+use core::fmt::{Display, Formatter, Write};
+use core::num::ParseIntError;
+use core::time::Duration;
+
+#[cfg(feature = "alloc")]
+use alloc::{format, string::String};
+
+// TODO <https://github.com/rust-lang/rust/issues/103765>
+#[cfg(feature = "nightly")]
+use core::error::Error;
+#[cfg(all(feature = "std", not(feature = "nightly")))]
+use std::error::Error;
 
 /// UTC Date.
 ///
@@ -45,11 +51,17 @@ use crate::time::{UTCDay, UTCTimestamp, UTCTransformations};
 /// // Not available for #![no_std]
 /// let iso_date = utc_date.as_iso_date();
 /// assert_eq!(iso_date, "2023-06-15");
+/// // Write ISO 8601 date str to a stack buffer
+/// let mut buf = [0; UTCDate::ISO_DATE_LEN];
+/// let _bytes_written = utc_date.write_iso_date(&mut buf).unwrap();
+/// let iso_date_str = core::str::from_utf8(&buf).unwrap();
+/// assert_eq!(iso_date_str, "2023-06-15");
 /// ```
 ///
 /// ## Safety
 /// Unchecked methods are provided for use in hot paths requiring high levels of optimisation.
 /// These methods assume valid input.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct UTCDate {
     era: u32,
@@ -101,6 +113,9 @@ impl UTCDate {
     /// The minimum year supported
     pub const MIN_YEAR: u64 = 1970;
 
+    /// The length of an ISO date (in characters)
+    pub const ISO_DATE_LEN: usize = 10;
+
     /// Unchecked method to create a UTC Date from provided year, month and day.
     ///
     /// ## Safety
@@ -120,21 +135,21 @@ impl UTCDate {
     }
 
     /// Try to create a UTC Date from provided year, month and day.
-    pub fn try_from_components(year: u64, month: u8, day: u8) -> Result<Self> {
+    pub fn try_from_components(year: u64, month: u8, day: u8) -> Result<Self, UTCDateError> {
         if !(Self::MIN_YEAR..=Self::MAX_YEAR).contains(&year) {
-            bail!("Year out of range! (year: {:04})", year);
+            return Err(UTCDateError::YearOutOfRange(year));
         }
         if month == 0 || month > 12 {
-            bail!("Month out of range! (month: {:02})", month);
+            return Err(UTCDateError::MonthOutOfRange(month));
         }
-        // force create
+        // SAFETY: we have checked year and month are within range
         let date = unsafe { Self::from_components_unchecked(year, month, day) };
-        // then check
+        // Then check days
         if date.day == 0 || date.day > date.days_in_month() {
-            bail!("Day out of range! (date: {date}");
+            return Err(UTCDateError::DayOutOfRange(date));
         }
         if date > UTCDate::MAX {
-            bail!("Date out of range! (date: {date}");
+            return Err(UTCDateError::DateOutOfRange(date));
         }
         Ok(date)
     }
@@ -176,6 +191,7 @@ impl UTCDate {
         let doy = ((153 * (if m > 2 { m - 3 } else { m + 9 }) + 2) / 5) + d - 1;
         let doe = (yoe * 365) + (yoe / 4) - (yoe / 100) + doy as u32;
         let days = (era as u64 * 146097) + doe as u64 - 719468;
+        // SAFETY: days is not exceeding UTCDay::MAX
         unsafe { UTCDay::from_u64_unchecked(days) }
     }
 
@@ -223,13 +239,16 @@ impl UTCDate {
         }
     }
 
-    /// Try parse date from string in the format:
+    /// Try parse date from str in the format:
     /// * `YYYY-MM-DD`
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
-    #[cfg(feature = "std")]
-    pub fn try_from_iso_date(iso: &str) -> Result<Self> {
+    pub fn try_from_iso_date(iso: &str) -> Result<Self, UTCDateError> {
+        let len = iso.len();
+        if len != Self::ISO_DATE_LEN {
+            return Err(UTCDateError::InvalidStrLen(len));
+        }
         // handle slice
         let (year_str, rem) = iso.split_at(4); // remainder = "-MM-DD"
         let (month_str, rem) = rem[1..].split_at(2); // remainder = "-DD"
@@ -246,9 +265,37 @@ impl UTCDate {
     ///
     /// Conforms to ISO 8601:
     /// <https://www.w3.org/TR/NOTE-datetime>
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     pub fn as_iso_date(&self) -> String {
         format!("{self}")
+    }
+
+    /// Internal truncated buffer write
+    #[inline]
+    pub(crate) fn _write_iso_date_trunc(&self, w: &mut StrWriter) {
+        // unwrap infallible
+        write!(w, "{self}").unwrap();
+    }
+
+    /// Write an ISO date to a buffer in the format:
+    /// * `YYYY-MM-DD`
+    ///
+    /// The buffer should have minimum length of [UTCDate::ISO_DATE_LEN] (10).
+    ///
+    /// A buffer of insufficient length will error ([UTCDateError::InvalidStrLen]).
+    ///
+    /// Returns number of UTF8 characters (bytes) written
+    ///
+    /// Conforms to ISO 8601:
+    /// <https://www.w3.org/TR/NOTE-datetime>
+    pub fn write_iso_date(&self, buf: &mut [u8]) -> Result<usize, UTCDateError> {
+        let write_len = Self::ISO_DATE_LEN;
+        if write_len > buf.len() {
+            return Err(UTCDateError::InvalidStrLen(buf.len()));
+        }
+        let mut writer = StrWriter::new(&mut buf[..write_len]);
+        self._write_iso_date_trunc(&mut writer);
+        Ok(writer.written)
     }
 }
 
@@ -314,5 +361,51 @@ impl From<UTCTimestamp> for UTCDate {
 impl From<UTCDay> for UTCDate {
     fn from(utc_day: UTCDay) -> Self {
         Self::from_day(utc_day)
+    }
+}
+
+/// Error type for UTCDate methods
+#[derive(Debug, Clone)]
+pub enum UTCDateError {
+    /// Error raised parsing int to string
+    ParseErr(ParseIntError),
+    /// Error raised due to out of range year
+    YearOutOfRange(u64),
+    /// Error raised due to out of range month
+    MonthOutOfRange(u8),
+    /// Error raised due to out of range day
+    DayOutOfRange(UTCDate),
+    /// Error raised due to out of range date
+    DateOutOfRange(UTCDate),
+    /// Error raised due to invalid ISO date length
+    InvalidStrLen(usize),
+}
+
+impl Display for UTCDateError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::ParseErr(e) => e.fmt(f),
+            Self::YearOutOfRange(y) => write!(f, "year ({y}) out of range!"),
+            Self::MonthOutOfRange(m) => write!(f, "month ({m}) out of range!"),
+            Self::DayOutOfRange(d) => write!(f, "day ({d}) out of range!"),
+            Self::DateOutOfRange(date) => write!(f, "date ({date}) out of range!"),
+            Self::InvalidStrLen(l) => write!(f, "invalid ISO date str length ({l}), 10 required"),
+        }
+    }
+}
+
+#[cfg(any(feature = "std", feature = "nightly"))]
+impl Error for UTCDateError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::ParseErr(e) => e.source(),
+            _ => None,
+        }
+    }
+}
+
+impl From<ParseIntError> for UTCDateError {
+    fn from(value: ParseIntError) -> Self {
+        Self::ParseErr(value)
     }
 }
