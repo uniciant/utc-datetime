@@ -14,7 +14,7 @@ impl<'a> StrWriter<'a> {
     }
 }
 
-impl<'a> core::fmt::Write for StrWriter<'a> {
+impl core::fmt::Write for StrWriter<'_> {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         let remaining = self.buf.len() - self.written;
         let write_len = remaining.min(s.len());

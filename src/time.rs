@@ -4,6 +4,7 @@
 
 use crate::constants::*;
 use crate::util::StrWriter;
+use core::error::Error;
 use core::fmt::{Display, Formatter, Write};
 use core::num::ParseIntError;
 use core::ops::*;
@@ -14,12 +15,6 @@ use alloc::{format, string::String};
 
 #[cfg(feature = "std")]
 use std::time::{SystemTime, SystemTimeError};
-
-// TODO <https://github.com/rust-lang/rust/issues/103765>
-#[cfg(feature = "nightly")]
-use core::error::Error;
-#[cfg(all(feature = "std", not(feature = "nightly")))]
-use std::error::Error;
 
 /// UTC Timestamp.
 ///
@@ -796,7 +791,6 @@ impl Display for UTCDayErrOutOfRange {
     }
 }
 
-#[cfg(any(feature = "std", feature = "nightly"))]
 impl Error for UTCDayErrOutOfRange {}
 
 impl UTCTransformations for UTCDay {
@@ -1339,7 +1333,6 @@ impl Display for UTCTimeOfDayError {
     }
 }
 
-#[cfg(any(feature = "std", feature = "nightly"))]
 impl Error for UTCTimeOfDayError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {

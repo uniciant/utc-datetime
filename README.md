@@ -200,7 +200,6 @@ The [`std`, `alloc`] feature flags are enabled by default.
 - `std`: Enables methods that use the system clock via `std::time::SystemTime`. Enables `alloc`.
 - `alloc`: Enables methods that use allocated strings.
 - `serde`: Derives `serde::Serialize` and `serde::Deserialize` for all internal non-error types.
-- `nightly`: Enables the unstable [`error_in_core`](https://github.com/rust-lang/rust/issues/103765) feature for improved `#[no_std]` error handling.
 
 ## References
 - [(Howard Hinnant, 2021) `chrono`-Compatible Low-Level Date Algorithms](http://howardhinnant.github.io/date_algorithms.html)
