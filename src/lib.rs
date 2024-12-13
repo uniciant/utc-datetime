@@ -201,7 +201,6 @@
 //! - `std`: Enables methods that use the system clock via `std::time::SystemTime`. Enables `alloc`.
 //! - `alloc`: Enables methods that use allocated strings.
 //! - `serde`: Derives `serde::Serialize` and `serde::Deserialize` for all internal non-error types.
-//! - `nightly`: Enables the unstable [`error_in_core`](https://github.com/rust-lang/rust/issues/103765) feature for improved `#[no_std]` error handling.
 //!
 //! ## References
 //! - [(Howard Hinnant, 2021) `chrono`-Compatible Low-Level Date Algorithms](http://howardhinnant.github.io/date_algorithms.html)
@@ -217,9 +216,6 @@
 #![warn(missing_debug_implementations)]
 #![warn(dead_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
-// TODO <https://github.com/rust-lang/rust/issues/103765>
-// Releasing in stable rust 1.81.0, 5th september!
-#![cfg_attr(all(not(feature = "std"), feature = "nightly"), feature(error_in_core))]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -232,6 +228,7 @@ mod util;
 
 use crate::date::{UTCDate, UTCDateError};
 use crate::time::{UTCTimeOfDay, UTCTimeOfDayError, UTCTimestamp, UTCTransformations};
+use core::error::Error;
 use core::fmt::{Display, Formatter};
 use core::time::Duration;
 
@@ -239,12 +236,6 @@ use core::time::Duration;
 use alloc::string::String;
 use time::UTCDayErrOutOfRange;
 use util::StrWriter;
-
-// TODO <https://github.com/rust-lang/rust/issues/103765>
-#[cfg(feature = "nightly")]
-use core::error::Error;
-#[cfg(all(feature = "std", not(feature = "nightly")))]
-use std::error::Error;
 
 /// UTC Datetime.
 ///
@@ -473,7 +464,6 @@ impl Display for UTCDatetimeError {
     }
 }
 
-#[cfg(any(feature = "std", feature = "nightly"))]
 impl Error for UTCDatetimeError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
@@ -520,7 +510,6 @@ impl Display for UTCError {
     }
 }
 
-#[cfg(any(feature = "std", feature = "nightly"))]
 impl Error for UTCError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
